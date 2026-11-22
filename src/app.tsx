@@ -207,6 +207,9 @@ function Workspace() {
 				tab={ activeTab }
 				commands={ commands }
 				zoom={ settings.zoom }
+				onZoomIn={ menuHandlers.zoomIn }
+				onZoomOut={ menuHandlers.zoomOut }
+				onResetZoom={ menuHandlers.resetZoom }
 			/>
 			<SettingsDialog
 				open={ settingsOpen }
