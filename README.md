@@ -6,9 +6,6 @@ A lightweight, simple text editor for note-taking on Windows and macOS.
 
 Minidit keeps the simplicity of Windows Notepad while adding a few conveniences such as tabs, encoding detection, and regex search. See the [specification](https://github.com/t-hamano/minidit/issues/1) and the [implementation roadmap](https://github.com/t-hamano/minidit/issues/2).
 
-> [!NOTE]
-> Minidit is under early development and is not ready for use yet.
-
 ## Installation
 
 Download the installer for your OS from the [Releases page](https://github.com/t-hamano/minidit/releases).
