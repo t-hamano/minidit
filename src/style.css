@@ -219,6 +219,12 @@ body {
 	min-height: 520px;
 }
 
+/* Keep the tab list in place while the panel scrolls. */
+.minidit-settings__tabs {
+	position: sticky;
+	top: var(--wpds-dimension-padding-2xl);
+}
+
 .minidit-about__error {
 	overflow-wrap: anywhere;
 }

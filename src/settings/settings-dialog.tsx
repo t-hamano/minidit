@@ -159,7 +159,7 @@ export function SettingsDialog( { open, onClose }: Props ) {
 						orientation="vertical"
 						defaultValue="general"
 					>
-						<Tabs.List>
+						<Tabs.List className="minidit-settings__tabs">
 							<Tabs.Tab value="general">General</Tabs.Tab>
 							<Tabs.Tab value="editor">Editor Settings</Tabs.Tab>
 						</Tabs.List>
