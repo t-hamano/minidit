@@ -18,7 +18,6 @@ import { checkForUpdate, type Update } from '../updater/updater';
 type Status =
 	| { kind: 'idle' }
 	| { kind: 'checking' }
-	| { kind: 'up-to-date' }
 	| { kind: 'error'; message: string };
 
 type Props = {
@@ -48,11 +47,10 @@ export function AboutDialog( { open, onClose, onUpdateFound }: Props ) {
 		setStatus( { kind: 'checking' } );
 		try {
 			const update = await checkForUpdate();
+			setStatus( { kind: 'idle' } );
 			if ( update ) {
 				onClose();
 				onUpdateFound( update );
-			} else {
-				setStatus( { kind: 'up-to-date' } );
 			}
 		} catch ( error ) {
 			setStatus( { kind: 'error', message: String( error ) } );
@@ -95,13 +93,6 @@ export function AboutDialog( { open, onClose, onUpdateFound }: Props ) {
 								Check for Updates
 							</Button>
 						</Stack>
-						{ status.kind === 'up-to-date' && (
-							<Notice.Root intent="success">
-								<Notice.Description>
-									You&apos;re up to date.
-								</Notice.Description>
-							</Notice.Root>
-						) }
 						{ status.kind === 'error' && (
 							<Notice.Root intent="error">
 								<Notice.Description className="minidit-about__error">
