@@ -7,7 +7,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 /**
  * Internal dependencies
  */
-import { saveWindowState } from '../settings/settings';
+import { flushSettings, saveWindowState } from '../settings/settings';
 import { tabTitle, type Tab } from './store';
 
 const isMac = navigator.userAgent.includes( 'Mac' );
@@ -29,10 +29,11 @@ export function useWindowTitle( tab: Tab ) {
 }
 
 /**
- * Closes the window, which quits the app, after saving its position and
- * size.
+ * Closes the window, which quits the app, after saving the settings and
+ * the window's position and size.
  */
 export async function closeWindow() {
+	await flushSettings();
 	await saveWindowState().catch( () => {} );
 	await getCurrentWindow().destroy();
 }

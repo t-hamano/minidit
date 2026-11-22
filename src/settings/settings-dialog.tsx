@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 /**
  * WordPress dependencies
@@ -12,6 +12,7 @@ import {
 	SelectControl,
 	Stack,
 	SwitchControl,
+	Text,
 } from '@wordpress/ui';
 
 /**
@@ -90,6 +91,32 @@ function Choice< T >( { label, options, value, onChange }: ChoiceProps< T > ) {
 	);
 }
 
+/**
+ * A titled group of settings, one setting per row.
+ *
+ * @param props          Section properties.
+ * @param props.title    The heading.
+ * @param props.children The settings.
+ */
+function Section( {
+	title,
+	children,
+}: {
+	title: string;
+	children: ReactNode;
+} ) {
+	return (
+		<section>
+			<Stack direction="column" gap="lg">
+				<Text variant="heading-md" render={ <h3 /> }>
+					{ title }
+				</Text>
+				{ children }
+			</Stack>
+		</section>
+	);
+}
+
 type Props = {
 	open: boolean;
 	onClose: () => void;
@@ -124,10 +151,18 @@ export function SettingsDialog( { open, onClose }: Props ) {
 					<Dialog.CloseIconButton />
 				</Dialog.Header>
 				<Dialog.Content>
-					<Stack direction="column" gap="lg">
-						<Stack direction="row" gap="md">
+					<Stack direction="column" gap="2xl">
+						<Section title="General">
+							<SwitchControl
+								label="Check for Updates at Startup"
+								checked={ settings.checkForUpdates }
+								onCheckedChange={ ( checkForUpdates ) =>
+									updateSettings( { checkForUpdates } )
+								}
+							/>
+						</Section>
+						<Section title="Appearance">
 							<InputControl
-								className="minidit-settings__font-family"
 								label="Font"
 								placeholder={ DEFAULT_FONT_NAME }
 								value={ settings.fontFamily }
@@ -138,7 +173,6 @@ export function SettingsDialog( { open, onClose }: Props ) {
 								}
 							/>
 							<InputControl
-								className="minidit-settings__font-size"
 								label="Font Size"
 								type="number"
 								min={ MIN_FONT_SIZE }
@@ -159,8 +193,6 @@ export function SettingsDialog( { open, onClose }: Props ) {
 									setFontSize( String( settings.fontSize ) )
 								}
 							/>
-						</Stack>
-						<Stack direction="row" gap="md">
 							<Choice
 								label="Tab Width"
 								options={ TAB_WIDTH_OPTIONS }
@@ -185,28 +217,21 @@ export function SettingsDialog( { open, onClose }: Props ) {
 									updateSettings( { theme } )
 								}
 							/>
-						</Stack>
-						<SwitchControl
-							label="Show Line Numbers"
-							checked={ settings.lineNumbers }
-							onCheckedChange={ ( lineNumbers ) =>
-								updateSettings( { lineNumbers } )
-							}
-						/>
-						<SwitchControl
-							label="Show Whitespace"
-							checked={ settings.showWhitespace }
-							onCheckedChange={ ( showWhitespace ) =>
-								updateSettings( { showWhitespace } )
-							}
-						/>
-						<SwitchControl
-							label="Check for Updates at Startup"
-							checked={ settings.checkForUpdates }
-							onCheckedChange={ ( checkForUpdates ) =>
-								updateSettings( { checkForUpdates } )
-							}
-						/>
+							<SwitchControl
+								label="Show Line Numbers"
+								checked={ settings.lineNumbers }
+								onCheckedChange={ ( lineNumbers ) =>
+									updateSettings( { lineNumbers } )
+								}
+							/>
+							<SwitchControl
+								label="Show Whitespace"
+								checked={ settings.showWhitespace }
+								onCheckedChange={ ( showWhitespace ) =>
+									updateSettings( { showWhitespace } )
+								}
+							/>
+						</Section>
 					</Stack>
 				</Dialog.Content>
 			</Dialog.Popup>

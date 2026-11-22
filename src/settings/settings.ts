@@ -100,8 +100,23 @@ export async function readSettings(): Promise< Settings > {
 	}
 }
 
-export function writeSettings( settings: Settings ): Promise< void > {
-	return invoke( 'write_settings', { settings } );
+let pendingWrite = Promise.resolve();
+
+/**
+ * Saves the settings. Writes run one at a time, so the last change is
+ * saved last.
+ *
+ * @param settings The settings to save.
+ */
+export function writeSettings( settings: Settings ) {
+	pendingWrite = pendingWrite
+		.then( () => invoke< void >( 'write_settings', { settings } ) )
+		.catch( () => {} );
+}
+
+/** Resolves once every change so far has been saved. */
+export function flushSettings(): Promise< void > {
+	return pendingWrite;
 }
 
 /** Saves the window's position and size for the next launch. */

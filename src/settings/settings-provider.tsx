@@ -34,7 +34,6 @@ const SettingsContext = createContext< SettingsContextValue | null >( null );
 export function SettingsProvider( { children }: { children: ReactNode } ) {
 	const [ settings, setSettings ] = useState< Settings | null >( null );
 	const settingsRef = useRef< Settings | null >( null );
-	const saving = useRef( Promise.resolve() );
 
 	useEffect( () => {
 		readSettings().then( ( loaded ) => {
@@ -51,10 +50,7 @@ export function SettingsProvider( { children }: { children: ReactNode } ) {
 		const next = { ...current, ...changes };
 		settingsRef.current = next;
 		setSettings( next );
-		// Writes one at a time, so the last change is saved last.
-		saving.current = saving.current
-			.then( () => writeSettings( next ) )
-			.catch( () => {} );
+		writeSettings( next );
 	}, [] );
 
 	const value = useMemo(

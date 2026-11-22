@@ -18,6 +18,11 @@ const WINDOW_KEY: &str = "window";
 #[derive(Default)]
 pub struct SettingsLock(Mutex<()>);
 
+/// The window's latest position and size while it was neither maximized
+/// nor minimized, to save when the app quits while it is maximized.
+#[derive(Default)]
+pub struct NormalBounds(Mutex<Option<WindowState>>);
+
 /// Window position and size in physical pixels.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
 pub struct WindowState {
@@ -101,38 +106,45 @@ pub fn write_settings(
 pub fn save_window_state(
     app: AppHandle,
     lock: tauri::State<SettingsLock>,
+    bounds: tauri::State<NormalBounds>,
     window: WebviewWindow,
 ) -> Result<(), String> {
     let _guard = lock.0.lock().unwrap_or_else(|error| error.into_inner());
     let mut settings = load(&app);
-    let previous = settings
-        .get(WINDOW_KEY)
-        .and_then(|value| serde_json::from_value::<WindowState>(value.clone()).ok());
+    track_normal_bounds(&window, &bounds);
     let maximized = window.is_maximized().unwrap_or(false);
-    let state = match (maximized, previous) {
-        // A maximized window's size is the screen's, so keep the size to
-        // return to when it is restored.
-        (true, Some(previous)) => WindowState {
-            maximized: true,
-            ..previous
-        },
-        _ => {
-            let position = window.outer_position().map_err(|error| error.to_string())?;
-            let size = window.inner_size().map_err(|error| error.to_string())?;
-            WindowState {
-                x: position.x,
-                y: position.y,
-                width: size.width,
-                height: size.height,
-                maximized,
-            }
-        }
+    // A maximized window's size is the screen's, so save the size to
+    // return to when it is restored.
+    let Some(normal) = *bounds.0.lock().unwrap_or_else(|error| error.into_inner()) else {
+        return Ok(());
+    };
+    let state = WindowState {
+        maximized,
+        ..normal
     };
     settings.insert(
         WINDOW_KEY.into(),
         serde_json::to_value(state).map_err(|error| error.to_string())?,
     );
     save(&app, &settings)
+}
+
+/// Records the window's position and size unless it is maximized or
+/// minimized. Called whenever the window moves or is resized.
+pub fn track_normal_bounds(window: &WebviewWindow, bounds: &NormalBounds) {
+    if window.is_maximized().unwrap_or(false) || window.is_minimized().unwrap_or(false) {
+        return;
+    }
+    let (Ok(position), Ok(size)) = (window.outer_position(), window.inner_size()) else {
+        return;
+    };
+    *bounds.0.lock().unwrap_or_else(|error| error.into_inner()) = Some(WindowState {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        maximized: false,
+    });
 }
 
 /// A rectangle in physical pixels.
@@ -187,6 +199,8 @@ pub fn restore_window_state(app: &AppHandle, window: &WebviewWindow) {
     if is_reachable(&state, &screens) {
         let _ = window.set_position(PhysicalPosition::new(state.x, state.y));
     }
+    let bounds = app.state::<NormalBounds>();
+    track_normal_bounds(window, &bounds);
     if state.maximized {
         let _ = window.maximize();
     }

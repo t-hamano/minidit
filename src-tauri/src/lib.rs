@@ -86,6 +86,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(settings::SettingsLock::default())
+        .manage(settings::NormalBounds::default())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) = event {
+                if let Some(webview_window) = window.app_handle().get_webview_window(window.label())
+                {
+                    settings::track_normal_bounds(
+                        &webview_window,
+                        &window.app_handle().state::<settings::NormalBounds>(),
+                    );
+                }
+            }
+        })
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 settings::restore_window_state(app.handle(), &window);
