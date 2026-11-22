@@ -108,6 +108,18 @@ class TabsStore {
 	}
 
 	/**
+	 * Activates the next or previous tab, wrapping around at the ends.
+	 *
+	 * @param offset `1` for the next tab, `-1` for the previous one.
+	 */
+	activateRelative( offset: 1 | -1 ) {
+		const { tabs, activeId } = this.snapshot;
+		const index = tabs.findIndex( ( tab ) => tab.id === activeId );
+		const next = ( index + offset + tabs.length ) % tabs.length;
+		this.activate( tabs[ next ].id );
+	}
+
+	/**
 	 * Closes a tab. Closing the last tab leaves one empty new tab.
 	 *
 	 * @param id The tab to close.
