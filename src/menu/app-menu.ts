@@ -30,7 +30,15 @@ export type MenuHandlers = {
 	replace: () => void;
 	findNext: () => void;
 	findPrevious: () => void;
+	openSettings: () => void;
 	setTheme: ( theme: ThemePreference ) => void;
+	toggleLineNumbers: () => void;
+};
+
+/** Settings shown as checked menu items. */
+export type MenuState = {
+	theme: ThemePreference;
+	lineNumbers: boolean;
 };
 
 const THEMES: { value: ThemePreference; label: string }[] = [
@@ -46,14 +54,14 @@ const THEMES: { value: ThemePreference; label: string }[] = [
  * Items for features that are not available yet are disabled.
  *
  * @param run   Runs a handler by name. Reads the latest handlers.
- * @param theme The current theme, checked in View > Theme.
+ * @param state The settings shown as checked items.
  */
 async function createAppMenu(
 	run: < K extends keyof MenuHandlers >(
 		name: K,
 		...args: Parameters< MenuHandlers[ K ] >
 	) => void,
-	theme: ThemePreference
+	state: MenuState
 ) {
 	const item = (
 		text: string,
@@ -72,13 +80,22 @@ async function createAppMenu(
 			CheckMenuItem.new( {
 				id: `theme-${ value }`,
 				text: label,
-				checked: value === theme,
+				checked: value === state.theme,
 				action: () => run( 'setTheme', value ),
 			} )
 		)
 	);
 
-	const settings = item( 'Settings…', 'CmdOrCtrl+,' );
+	const lineNumbersItem = await CheckMenuItem.new( {
+		id: 'line-numbers',
+		text: 'Line Numbers',
+		checked: state.lineNumbers,
+		action: () => run( 'toggleLineNumbers' ),
+	} );
+
+	const settings = item( 'Settings…', 'CmdOrCtrl+,', () =>
+		run( 'openSettings' )
+	);
 	const about = item( 'About Minidit', undefined );
 
 	const appSubmenu = isMac
@@ -157,7 +174,7 @@ async function createAppMenu(
 					item( 'Zoom Out', 'CmdOrCtrl+-' ),
 					item( 'Reset Zoom', 'CmdOrCtrl+0' ),
 					separator,
-					item( 'Line Numbers', undefined ),
+					lineNumbersItem,
 					item( 'Show Whitespace', undefined ),
 					separator,
 					await Submenu.new( { text: 'Theme', items: themeItems } ),
@@ -166,20 +183,21 @@ async function createAppMenu(
 		],
 	} );
 
-	return { menu, themeItems };
+	return { menu, themeItems, lineNumbersItem };
 }
 
 /**
  * Installs the menu bar and keeps it in sync with the app.
  *
  * @param handlers Commands the menu runs.
- * @param theme    The current theme.
+ * @param state    The settings shown as checked items.
  */
-export function useAppMenu( handlers: MenuHandlers, theme: ThemePreference ) {
+export function useAppMenu( handlers: MenuHandlers, state: MenuState ) {
 	const handlersRef = useRef( handlers );
 	handlersRef.current = handlers;
 	const themeItemsRef = useRef< CheckMenuItem[] >( [] );
-	const initialTheme = useRef( theme );
+	const lineNumbersItemRef = useRef< CheckMenuItem | null >( null );
+	const initialState = useRef( state );
 
 	useEffect( () => {
 		let canceled = false;
@@ -187,13 +205,14 @@ export function useAppMenu( handlers: MenuHandlers, theme: ThemePreference ) {
 			( name, ...args ) =>
 				// @ts-expect-error The arguments match the handler by name.
 				handlersRef.current[ name ]( ...args ),
-			initialTheme.current
+			initialState.current
 		)
-			.then( async ( { menu, themeItems } ) => {
+			.then( async ( { menu, themeItems, lineNumbersItem } ) => {
 				if ( canceled ) {
 					return;
 				}
 				themeItemsRef.current = themeItems;
+				lineNumbersItemRef.current = lineNumbersItem;
 				await menu.setAsAppMenu();
 			} )
 			.catch( () => {} );
@@ -202,6 +221,7 @@ export function useAppMenu( handlers: MenuHandlers, theme: ThemePreference ) {
 		};
 	}, [] );
 
+	const { theme, lineNumbers } = state;
 	useEffect( () => {
 		themeItemsRef.current.forEach( ( themeItem, index ) => {
 			themeItem
@@ -209,6 +229,11 @@ export function useAppMenu( handlers: MenuHandlers, theme: ThemePreference ) {
 				.catch( () => {} );
 		} );
 	}, [ theme ] );
+
+	useEffect( () => {
+		// A check item toggles itself when clicked, so set it either way.
+		lineNumbersItemRef.current?.setChecked( lineNumbers ).catch( () => {} );
+	}, [ lineNumbers ] );
 }
 
 /**

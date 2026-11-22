@@ -155,3 +155,11 @@ body {
 	color: var(--wpds-color-foreground-content-neutral-weak);
 	text-align: end;
 }
+
+.minidit-settings__font-family {
+	flex: 1;
+}
+
+.minidit-settings__font-size {
+	width: 6em;
+}

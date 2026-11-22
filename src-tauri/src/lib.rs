@@ -1,9 +1,11 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
+use tauri::Manager;
 use text::{Encoding, LineEnding};
 
 mod files;
+mod settings;
 mod text;
 
 #[derive(Serialize)]
@@ -83,7 +85,21 @@ async fn write_text_file(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![read_text_file, write_text_file])
+        .manage(settings::SettingsLock::default())
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                settings::restore_window_state(app.handle(), &window);
+                window.show()?;
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            read_text_file,
+            write_text_file,
+            settings::read_settings,
+            settings::write_settings,
+            settings::save_window_state
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

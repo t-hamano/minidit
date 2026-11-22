@@ -7,6 +7,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 /**
  * Internal dependencies
  */
+import { saveWindowState } from '../settings/settings';
 import { tabTitle, type Tab } from './store';
 
 const isMac = navigator.userAgent.includes( 'Mac' );
@@ -28,6 +29,15 @@ export function useWindowTitle( tab: Tab ) {
 }
 
 /**
+ * Closes the window, which quits the app, after saving its position and
+ * size.
+ */
+export async function closeWindow() {
+	await saveWindowState().catch( () => {} );
+	await getCurrentWindow().destroy();
+}
+
+/**
  * Asks about unsaved changes before the window closes.
  *
  * @param confirmQuit Resolves to whether the window may close.
@@ -41,7 +51,7 @@ export function useConfirmBeforeClose( confirmQuit: () => Promise< boolean > ) {
 		const unlisten = appWindow.onCloseRequested( async ( event ) => {
 			event.preventDefault();
 			if ( await confirmRef.current() ) {
-				await appWindow.destroy();
+				await closeWindow();
 			}
 		} );
 		return () => {

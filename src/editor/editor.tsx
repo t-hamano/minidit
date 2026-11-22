@@ -1,7 +1,14 @@
 /**
  * External dependencies
  */
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import {
+	forwardRef,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	type CSSProperties,
+} from 'react';
 import { redo, undo } from '@codemirror/commands';
 import { EditorView } from '@codemirror/view';
 
@@ -17,6 +24,27 @@ import {
 	type MatchInfo,
 	type SearchOptions,
 } from './search';
+import { applyViewSettings, type ViewSettings } from './view-settings';
+import type { Settings } from '../settings/settings';
+
+/**
+ * The editor font, as CSS custom properties read by the editor theme.
+ *
+ * @param settings            The settings.
+ * @param settings.fontFamily Font name; empty for the default font.
+ * @param settings.fontSize   Font size in pixels.
+ */
+function fontStyle( {
+	fontFamily,
+	fontSize,
+}: Pick< Settings, 'fontFamily' | 'fontSize' > ) {
+	return {
+		'--minidit-font-family': fontFamily.trim()
+			? `${ JSON.stringify( fontFamily.trim() ) }, `
+			: '',
+		'--minidit-font-size': `${ fontSize }px`,
+	} as CSSProperties;
+}
 
 export type EditorHandle = {
 	focus: () => void;
@@ -37,6 +65,7 @@ type Props = {
 	tab: Tab;
 	/** The search bar's options while it is open, otherwise `null`. */
 	search: SearchOptions | null;
+	settings: ViewSettings & Pick< Settings, 'fontFamily' | 'fontSize' >;
 };
 
 /**
@@ -44,7 +73,7 @@ type Props = {
  * by all tabs; switching tabs swaps in the tab's own editor state.
  */
 export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
-	{ tab, search },
+	{ tab, search, settings },
 	ref
 ) {
 	const containerRef = useRef< HTMLDivElement >( null );
@@ -90,11 +119,21 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 	// swapped in when another tab becomes active.
 	const searchRef = useRef( search );
 	searchRef.current = search;
+	const viewSettings = useMemo< ViewSettings >(
+		() => ( {
+			tabWidth: settings.tabWidth,
+			lineNumbers: settings.lineNumbers,
+		} ),
+		[ settings.tabWidth, settings.lineNumbers ]
+	);
+	const viewSettingsRef = useRef( viewSettings );
+	viewSettingsRef.current = viewSettings;
 
 	useEffect( () => {
 		const view = viewRef.current;
 		if ( view ) {
 			view.setState( tab.editorState );
+			applyViewSettings( view, viewSettingsRef.current );
 			applySearch( view, searchRef.current );
 			if ( ! searchRef.current ) {
 				view.focus();
@@ -109,10 +148,17 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 		}
 	}, [ search ] );
 
+	useEffect( () => {
+		if ( viewRef.current ) {
+			applyViewSettings( viewRef.current, viewSettings );
+		}
+	}, [ viewSettings ] );
+
 	return (
 		<div
 			className="minidit-editor"
 			ref={ containerRef }
+			style={ fontStyle( settings ) }
 			onContextMenu={ ( event ) => {
 				event.preventDefault();
 				showEditorContextMenu( handle ).catch( () => {} );
