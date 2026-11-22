@@ -7,6 +7,7 @@ import type { EditorState } from '@codemirror/state';
 /**
  * Internal dependencies
  */
+import { detectIndentation, type Indentation } from '../editor/indent';
 import { createEditorState } from '../editor/state';
 import { NEW_FILE_FORMAT, type TextFormat } from '../files/text-format';
 
@@ -17,6 +18,11 @@ export type Tab = TextFormat & {
 	/** `null` for a tab that has never been saved. */
 	path: string | null;
 	isDirty: boolean;
+	/**
+	 * Indentation detected when the file was opened, or `null` to use the
+	 * defaults from the settings.
+	 */
+	indentation: Indentation | null;
 	/**
 	 * The tab's editor state, including its undo history. Kept up to date
 	 * on every editor update.
@@ -190,6 +196,7 @@ class TabsStore {
 			encoding: format.encoding,
 			lineEnding: format.lineEnding,
 			isDirty: false,
+			indentation: path ? detectIndentation( text ) : null,
 			editorState: createEditorState( text, ( state, docChanged ) => {
 				// Mutated in place: the editor view already shows this state,
 				// so listeners need no notification.

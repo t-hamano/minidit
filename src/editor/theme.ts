@@ -11,13 +11,31 @@ const DEFAULT_FONT_FAMILY = isMac
 	: '"Consolas", "MS Gothic", monospace';
 
 /**
+ * The editor font. A chosen font comes first, with the default fonts as
+ * fallbacks for missing glyphs.
+ *
+ * @param fontFamily Font name; empty for the default font.
+ * @param fontSize   Font size in pixels, including the zoom level.
+ */
+export function fontTheme( fontFamily: string, fontSize: number ) {
+	const name = fontFamily.trim();
+	return EditorView.theme( {
+		'&': { fontSize: `${ fontSize }px` },
+		'.cm-scroller': {
+			fontFamily: name
+				? `${ JSON.stringify( name ) }, ${ DEFAULT_FONT_FAMILY }`
+				: DEFAULT_FONT_FAMILY,
+		},
+	} );
+}
+
+/**
  * Editor colors come from the `@wordpress/theme` design tokens, so they
  * follow the light / dark theme without reconfiguring CodeMirror.
  */
 export const editorTheme = EditorView.theme( {
 	'&': {
 		height: '100%',
-		fontSize: 'var(--minidit-font-size, 14px)',
 		color: 'var(--wpds-color-foreground-content-neutral)',
 		backgroundColor: 'var(--wpds-color-background-surface-neutral)',
 	},
@@ -25,8 +43,6 @@ export const editorTheme = EditorView.theme( {
 		outline: 'none',
 	},
 	'.cm-scroller': {
-		// The chosen font, with the default fonts as fallbacks.
-		fontFamily: `var(--minidit-font-family,) ${ DEFAULT_FONT_FAMILY }`,
 		lineHeight: '1.5',
 	},
 	'.cm-content': {
@@ -47,6 +63,11 @@ export const editorTheme = EditorView.theme( {
 	// Holds CodeMirror's hidden search panel; the app draws its own bar.
 	'.cm-panels-top': {
 		border: 'none',
+	},
+	'.cm-fullWidthSpace': {
+		outline:
+			'var(--wpds-border-width-xs) dashed var(--wpds-color-stroke-surface-neutral-strong)',
+		outlineOffset: 'calc(-1 * var(--wpds-border-width-xs))',
 	},
 	'.cm-searchMatch': {
 		backgroundColor: 'var(--wpds-color-background-surface-warning)',
