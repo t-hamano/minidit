@@ -8,10 +8,11 @@ import type { EditorState } from '@codemirror/state';
  * Internal dependencies
  */
 import { createEditorState } from '../editor/state';
+import { NEW_FILE_FORMAT, type TextFormat } from '../files/text-format';
 
 export const UNTITLED = '(untitled)';
 
-export type Tab = {
+export type Tab = TextFormat & {
 	id: number;
 	/** `null` for a tab that has never been saved. */
 	path: string | null;
@@ -41,7 +42,7 @@ class TabsStore {
 	private listeners = new Set< Listener >();
 
 	constructor() {
-		const tab = this.createTab( '', null );
+		const tab = this.createTab( '', null, NEW_FILE_FORMAT );
 		this.snapshot = { tabs: [ tab ], activeId: tab.id };
 	}
 
@@ -68,12 +69,13 @@ class TabsStore {
 	/**
 	 * Opens a new tab after the active one and activates it.
 	 *
-	 * @param text Initial contents.
-	 * @param path File path, or `null` for a new file.
+	 * @param text   Initial contents.
+	 * @param path   File path, or `null` for a new file.
+	 * @param format The file's encoding and line ending.
 	 * @return The new tab.
 	 */
-	open( text: string, path: string | null ): Tab {
-		const tab = this.createTab( text, path );
+	open( text: string, path: string | null, format: TextFormat ): Tab {
+		const tab = this.createTab( text, path, format );
 		const { tabs, activeId } = this.snapshot;
 		const index = tabs.findIndex( ( t ) => t.id === activeId );
 		const next = [ ...tabs ];
@@ -85,12 +87,13 @@ class TabsStore {
 	/**
 	 * Replaces a tab's contents with a file, keeping its position.
 	 *
-	 * @param id   The tab to replace.
-	 * @param text New contents.
-	 * @param path File path.
+	 * @param id     The tab to replace.
+	 * @param text   New contents.
+	 * @param path   File path.
+	 * @param format The file's encoding and line ending.
 	 */
-	replace( id: number, text: string, path: string ) {
-		const tab = this.createTab( text, path );
+	replace( id: number, text: string, path: string, format: TextFormat ) {
+		const tab = this.createTab( text, path, format );
 		this.set( {
 			tabs: this.snapshot.tabs.map( ( t ) => ( t.id === id ? tab : t ) ),
 			activeId:
@@ -117,7 +120,7 @@ class TabsStore {
 		}
 		const rest = tabs.filter( ( tab ) => tab.id !== id );
 		if ( rest.length === 0 ) {
-			const tab = this.createTab( '', null );
+			const tab = this.createTab( '', null, NEW_FILE_FORMAT );
 			this.set( { tabs: [ tab ], activeId: tab.id } );
 			return;
 		}
@@ -163,11 +166,17 @@ class TabsStore {
 		} );
 	}
 
-	private createTab( text: string, path: string | null ): Tab {
+	private createTab(
+		text: string,
+		path: string | null,
+		format: TextFormat
+	): Tab {
 		const id = nextId++;
 		return {
 			id,
 			path,
+			encoding: format.encoding,
+			lineEnding: format.lineEnding,
 			isDirty: false,
 			editorState: createEditorState( text, ( state, docChanged ) => {
 				// Mutated in place: the editor view already shows this state,
