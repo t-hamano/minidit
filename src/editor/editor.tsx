@@ -2,15 +2,19 @@
  * External dependencies
  */
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { redo, undo } from '@codemirror/commands';
 import { EditorView } from '@codemirror/view';
 
 /**
  * Internal dependencies
  */
+import { showEditorContextMenu } from '../menu/app-menu';
 import type { Tab } from '../tabs/store';
 
 export type EditorHandle = {
 	focus: () => void;
+	undo: () => void;
+	redo: () => void;
 };
 
 type Props = {
@@ -29,9 +33,20 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 	const containerRef = useRef< HTMLDivElement >( null );
 	const viewRef = useRef< EditorView | null >( null );
 
-	useImperativeHandle( ref, () => ( {
+	const handle: EditorHandle = {
 		focus: () => viewRef.current?.focus(),
-	} ) );
+		undo: () => {
+			if ( viewRef.current ) {
+				undo( viewRef.current );
+			}
+		},
+		redo: () => {
+			if ( viewRef.current ) {
+				redo( viewRef.current );
+			}
+		},
+	};
+	useImperativeHandle( ref, () => handle );
 
 	useEffect( () => {
 		const view = new EditorView( { parent: containerRef.current! } );
@@ -53,5 +68,14 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ tab.id ] );
 
-	return <div className="minidit-editor" ref={ containerRef } />;
+	return (
+		<div
+			className="minidit-editor"
+			ref={ containerRef }
+			onContextMenu={ ( event ) => {
+				event.preventDefault();
+				showEditorContextMenu( handle ).catch( () => {} );
+			} }
+		/>
+	);
 } );

@@ -6,42 +6,26 @@ import { useEffect } from 'react';
 /**
  * Internal dependencies
  */
-import type { TabCommands } from './tabs/use-tab-commands';
-
-const isMac = navigator.userAgent.includes( 'Mac' );
+import { tabsStore } from './tabs/store';
 
 /**
- * Keyboard shortcuts for file and tab operations.
- *
- * These are temporary until the native menu bar, which will own the
- * accelerators, is added.
- *
- * @param commands Commands to run.
+ * Keyboard shortcuts that have no menu item: Ctrl+Tab and Ctrl+Shift+Tab
+ * switch tabs, on macOS too. The menu bar handles every other shortcut.
  */
-export function useShortcuts( commands: TabCommands ) {
+export function useTabSwitchShortcuts() {
 	useEffect( () => {
 		const onKeyDown = ( event: KeyboardEvent ) => {
-			const mod = isMac ? event.metaKey : event.ctrlKey;
-			if ( ! mod || event.altKey ) {
-				return;
-			}
-			const key = event.key.toLowerCase();
-			let command: ( () => unknown ) | undefined;
-			if ( ! event.shiftKey && key === 'n' ) {
-				command = commands.newTab;
-			} else if ( ! event.shiftKey && key === 'o' ) {
-				command = commands.openFiles;
-			} else if ( ! event.shiftKey && key === 'w' ) {
-				command = () => commands.closeTab();
-			} else if ( key === 's' ) {
-				command = event.shiftKey ? commands.saveAs : commands.save;
-			}
-			if ( command ) {
+			if (
+				event.key === 'Tab' &&
+				event.ctrlKey &&
+				! event.altKey &&
+				! event.metaKey
+			) {
 				event.preventDefault();
-				command();
+				tabsStore.activateRelative( event.shiftKey ? -1 : 1 );
 			}
 		};
 		window.addEventListener( 'keydown', onKeyDown, true );
 		return () => window.removeEventListener( 'keydown', onKeyDown, true );
-	}, [ commands ] );
+	}, [] );
 }
