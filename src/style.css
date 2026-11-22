@@ -27,20 +27,23 @@ body {
 	flex-shrink: 0;
 	align-items: center;
 	gap: var(--wpds-dimension-gap-xs);
-	padding: var(--wpds-dimension-padding-xs) var(--wpds-dimension-padding-xs) 0;
 	background: var(--wpds-color-background-surface-neutral-weak);
-	border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
+	border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral-weak);
 	user-select: none;
 }
 
 .minidit-tab-bar__tabs {
 	display: flex;
+	align-self: stretch;
 	min-width: 0;
 	overflow-x: auto;
+	overflow-y: hidden;
 	scrollbar-width: none;
 }
 
 .minidit-tab-bar__new {
+	--wp-ui-button-height: var(--wpds-dimension-size-xs);
+
 	flex-shrink: 0;
 }
 
@@ -51,16 +54,8 @@ body {
 
 .minidit-tab {
 	position: relative;
-	display: flex;
 	flex-shrink: 0;
-	max-width: var(--wpds-dimension-surface-width-xs);
-	border-radius: var(--wpds-border-radius-sm) var(--wpds-border-radius-sm) 0 0;
 	cursor: default;
-}
-
-.minidit-tab.is-active {
-	background: var(--wpds-color-background-surface-neutral);
-	box-shadow: 0 var(--wpds-border-width-xs) 0 var(--wpds-color-background-surface-neutral);
 }
 
 .minidit-tab.is-drop-before::before,
@@ -68,6 +63,7 @@ body {
 	position: absolute;
 	top: var(--wpds-dimension-size-5xs);
 	bottom: var(--wpds-dimension-size-5xs);
+	z-index: 1;
 	width: var(--wpds-border-width-sm);
 	content: "";
 	background: var(--wpds-color-stroke-focus);
@@ -82,7 +78,17 @@ body {
 }
 
 .minidit-tab__button {
-	padding-inline-end: calc(var(--wpds-dimension-size-xs) + var(--wpds-dimension-padding-xs));
+	min-width: 96px;
+	max-width: 200px;
+	padding-inline: var(--wpds-dimension-size-4xs) var(--wpds-dimension-size-md);
+	border-radius: 0;
+	border-top-color: var(--wpds-color-stroke-surface-neutral-weak);
+	border-right-color: var(--wpds-color-stroke-surface-neutral-weak);
+}
+
+.minidit-tab.is-active .minidit-tab__button {
+	background: var(--wpds-color-background-surface-neutral);
+	box-shadow: 0 var(--wpds-border-width-xs) 0 var(--wpds-color-background-surface-neutral);
 }
 
 /* Draw focus rings inside, so the scrolling tab list does not clip them. */
@@ -91,12 +97,18 @@ body {
 }
 
 .minidit-tab__close {
-	--wp-ui-button-height: var(--wpds-dimension-size-xs);
-
 	position: absolute;
 	top: 50%;
-	right: var(--wpds-dimension-padding-xs);
+	right: var(--wpds-dimension-size-5xs);
+	color: var(--wpds-color-foreground-content-neutral-weak);
+	opacity: 0;
 	transform: translateY(-50%);
+}
+
+.minidit-tab:hover .minidit-tab__close,
+.minidit-tab.is-active .minidit-tab__close,
+.minidit-tab__close:focus {
+	opacity: 1;
 }
 
 .minidit-tab__close svg {
