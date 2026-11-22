@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { useEffect, useRef } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 /**
@@ -39,7 +40,8 @@ export async function closeWindow() {
 }
 
 /**
- * Asks about unsaved changes before the window closes.
+ * Asks about unsaved changes before the window closes, and before the app
+ * quits from outside its menu, such as from the Dock on macOS.
  *
  * @param confirmQuit Resolves to whether the window may close.
  */
@@ -48,15 +50,22 @@ export function useConfirmBeforeClose( confirmQuit: () => Promise< boolean > ) {
 	confirmRef.current = confirmQuit;
 
 	useEffect( () => {
-		const appWindow = getCurrentWindow();
-		const unlisten = appWindow.onCloseRequested( async ( event ) => {
-			event.preventDefault();
+		const quit = async () => {
 			if ( await confirmRef.current() ) {
 				await closeWindow();
 			}
-		} );
+		};
+		const unlistenClose = getCurrentWindow().onCloseRequested(
+			( event ) => {
+				event.preventDefault();
+				return quit();
+			}
+		);
+		const unlistenQuit = listen( 'quit-requested', quit );
 		return () => {
-			unlisten.then( ( stop ) => stop() ).catch( () => {} );
+			for ( const unlisten of [ unlistenClose, unlistenQuit ] ) {
+				unlisten.then( ( stop ) => stop() ).catch( () => {} );
+			}
 		};
 	}, [] );
 }

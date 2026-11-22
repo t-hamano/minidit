@@ -7,6 +7,8 @@ use text::{Encoding, LineEnding};
 mod browser_shortcuts;
 mod files;
 mod fonts;
+#[cfg(target_os = "macos")]
+mod macos_quit;
 mod open_files;
 mod settings;
 mod text;
@@ -147,6 +149,8 @@ pub fn run() {
                 app.state::<open_files::OpenQueue>()
                     .open(app.handle(), paths);
             }
+            #[cfg(target_os = "macos")]
+            macos_quit::install(app.handle());
             if let Some(window) = app.get_webview_window("main") {
                 browser_shortcuts::disable(&window);
                 settings::restore_window_state(app.handle(), &window);
