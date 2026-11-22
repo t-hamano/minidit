@@ -24,10 +24,15 @@ import { useOsFiles } from './files/use-os-files';
 import {
 	closeWindow,
 	useConfirmBeforeClose,
+	useReportUnsavedChanges,
 	useWindowTitle,
 } from './tabs/use-window';
 import { AppThemeProvider } from './theme/app-theme-provider';
-import { useBrowserKeyShortcuts, useTabSwitchShortcuts } from './use-shortcuts';
+import {
+	useBrowserKeyShortcuts,
+	useTabSwitchShortcuts,
+	useWheelZoom,
+} from './use-shortcuts';
 
 const DEFAULT_SEARCH: SearchOptions = {
 	search: '',
@@ -62,6 +67,8 @@ function Workspace() {
 
 	const searchBarRef = useRef< SearchBarHandle >( null );
 	const [ searchOpen, setSearchOpen ] = useState( false );
+	// Find opens the bar with only its Find field, as in VS Code.
+	const [ replaceOpen, setReplaceOpen ] = useState( false );
 	const [ searchOptions, setSearchOptions ] =
 		useState< SearchOptions >( DEFAULT_SEARCH );
 	const searchOptionsRef = useRef( searchOptions );
@@ -79,10 +86,14 @@ function Workspace() {
 
 	const openSearch = useCallback( ( field: 'find' | 'replace' ) => {
 		setSearchOpen( true );
+		if ( field === 'replace' ) {
+			setReplaceOpen( true );
+		}
 		setFocusRequest( { field } );
 	}, [] );
 	const closeSearch = useCallback( () => {
 		setSearchOpen( false );
+		setReplaceOpen( false );
 		focusEditor();
 	}, [ focusEditor ] );
 	const findAgain = useCallback(
@@ -156,8 +167,10 @@ function Workspace() {
 	useAppMenu( menuHandlers, settings );
 	useTabSwitchShortcuts();
 	useBrowserKeyShortcuts( menuHandlers );
+	useWheelZoom( menuHandlers.zoomIn, menuHandlers.zoomOut );
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
+	useReportUnsavedChanges();
 	useOsFiles( commands );
 	const offerUpdate = useUpdater(
 		settings.checkForUpdates,
@@ -176,6 +189,10 @@ function Workspace() {
 					ref={ searchBarRef }
 					options={ searchOptions }
 					onChange={ setSearchOptions }
+					replaceOpen={ replaceOpen }
+					onToggleReplace={ () =>
+						setReplaceOpen( ( open ) => ! open )
+					}
 					onClose={ closeSearch }
 					editorRef={ editorRef }
 				/>

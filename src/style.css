@@ -155,7 +155,7 @@ body {
 .minidit-search-bar {
 	display: grid;
 	flex-shrink: 0;
-	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-columns: auto minmax(0, 1fr) auto;
 	gap: var(--wpds-dimension-gap-xs);
 	padding: var(--wpds-dimension-padding-xs) var(--wpds-dimension-padding-sm);
 	background: var(--wpds-color-background-surface-neutral-weak);
@@ -164,6 +164,11 @@ body {
 
 .minidit-search-bar__row {
 	display: contents;
+}
+
+/* The Replace row starts under the Find field, beside the toggle. */
+.minidit-search-bar__row + .minidit-search-bar__row > :first-child {
+	grid-column: 2;
 }
 
 .minidit-search-bar__actions {
