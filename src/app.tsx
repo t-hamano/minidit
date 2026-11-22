@@ -28,7 +28,11 @@ import {
 	useWindowTitle,
 } from './tabs/use-window';
 import { AppThemeProvider } from './theme/app-theme-provider';
-import { useTabSwitchShortcuts, useWheelZoom } from './use-shortcuts';
+import {
+	useBrowserKeyShortcuts,
+	useTabSwitchShortcuts,
+	useWheelZoom,
+} from './use-shortcuts';
 
 const DEFAULT_SEARCH: SearchOptions = {
 	search: '',
@@ -162,6 +166,7 @@ function Workspace() {
 
 	useAppMenu( menuHandlers, settings );
 	useTabSwitchShortcuts();
+	useBrowserKeyShortcuts( menuHandlers );
 	useWheelZoom( menuHandlers.zoomIn, menuHandlers.zoomOut );
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
