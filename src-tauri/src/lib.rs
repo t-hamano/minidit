@@ -4,6 +4,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
 use text::{Encoding, LineEnding};
 
+mod browser_shortcuts;
 mod files;
 mod fonts;
 mod open_files;
@@ -147,6 +148,7 @@ pub fn run() {
                     .open(app.handle(), paths);
             }
             if let Some(window) = app.get_webview_window("main") {
+                browser_shortcuts::disable(&window);
                 settings::restore_window_state(app.handle(), &window);
                 window.show()?;
             }
