@@ -24,6 +24,7 @@ import { useOsFiles } from './files/use-os-files';
 import {
 	closeWindow,
 	useConfirmBeforeClose,
+	useReportUnsavedChanges,
 	useWindowTitle,
 } from './tabs/use-window';
 import { AppThemeProvider } from './theme/app-theme-provider';
@@ -164,6 +165,7 @@ function Workspace() {
 	useWheelZoom( menuHandlers.zoomIn, menuHandlers.zoomOut );
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
+	useReportUnsavedChanges();
 	useOsFiles( commands );
 	const offerUpdate = useUpdater(
 		settings.checkForUpdates,

@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
@@ -7,6 +8,8 @@ use text::{Encoding, LineEnding};
 mod browser_shortcuts;
 mod files;
 mod fonts;
+#[cfg(target_os = "macos")]
+mod macos_quit;
 mod open_files;
 mod settings;
 mod text;
@@ -106,6 +109,24 @@ fn watch_files(app: AppHandle, watcher: State<'_, watcher::FileWatcher>, paths: 
     watcher.watch(&app, paths);
 }
 
+/// Whether any tab has unsaved changes, kept up to date by the window.
+#[derive(Default)]
+pub struct UnsavedChanges(AtomicBool);
+
+impl UnsavedChanges {
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    pub fn get(&self) -> bool {
+        self.0.load(Ordering::SeqCst)
+    }
+}
+
+/// Records whether any tab has unsaved changes, so that quitting from
+/// outside the app can ask about them only when needed.
+#[tauri::command]
+fn set_unsaved_changes(state: State<'_, UnsavedChanges>, value: bool) {
+    state.0.store(value, Ordering::SeqCst);
+}
+
 /// Called once the window is ready to open files. Returns the files that
 /// were waiting, such as those named on the command line.
 #[tauri::command]
@@ -130,6 +151,7 @@ pub fn run() {
         .manage(watcher::FileWatcher::default())
         .manage(settings::SettingsLock::default())
         .manage(settings::NormalBounds::default())
+        .manage(UnsavedChanges::default())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) = event {
                 if let Some(webview_window) = window.app_handle().get_webview_window(window.label())
@@ -147,6 +169,8 @@ pub fn run() {
                 app.state::<open_files::OpenQueue>()
                     .open(app.handle(), paths);
             }
+            #[cfg(target_os = "macos")]
+            macos_quit::install(app.handle());
             if let Some(window) = app.get_webview_window("main") {
                 browser_shortcuts::disable(&window);
                 settings::restore_window_state(app.handle(), &window);
@@ -160,6 +184,7 @@ pub fn run() {
             list_fonts,
             watch_files,
             take_pending_files,
+            set_unsaved_changes,
             settings::read_settings,
             settings::write_settings,
             settings::save_window_state

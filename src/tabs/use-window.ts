@@ -2,13 +2,15 @@
  * External dependencies
  */
 import { useEffect, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 /**
  * Internal dependencies
  */
 import { flushSettings, saveWindowState } from '../settings/settings';
-import { tabTitle, type Tab } from './store';
+import { tabTitle, useTabs, type Tab } from './store';
 
 const isMac = navigator.userAgent.includes( 'Mac' );
 
@@ -39,7 +41,8 @@ export async function closeWindow() {
 }
 
 /**
- * Asks about unsaved changes before the window closes.
+ * Asks about unsaved changes before the window closes, and before the app
+ * quits from outside its menu, such as from the Dock on macOS.
  *
  * @param confirmQuit Resolves to whether the window may close.
  */
@@ -48,15 +51,36 @@ export function useConfirmBeforeClose( confirmQuit: () => Promise< boolean > ) {
 	confirmRef.current = confirmQuit;
 
 	useEffect( () => {
-		const appWindow = getCurrentWindow();
-		const unlisten = appWindow.onCloseRequested( async ( event ) => {
-			event.preventDefault();
+		const quit = async () => {
 			if ( await confirmRef.current() ) {
 				await closeWindow();
 			}
-		} );
+		};
+		const unlistenClose = getCurrentWindow().onCloseRequested(
+			( event ) => {
+				event.preventDefault();
+				return quit();
+			}
+		);
+		const unlistenQuit = listen( 'quit-requested', quit );
 		return () => {
-			unlisten.then( ( stop ) => stop() ).catch( () => {} );
+			for ( const unlisten of [ unlistenClose, unlistenQuit ] ) {
+				unlisten.then( ( stop ) => stop() ).catch( () => {} );
+			}
 		};
 	}, [] );
+}
+
+/**
+ * Tells the app whether any tab has unsaved changes, so that quitting from
+ * outside the app, such as from the Dock on macOS, asks only when needed.
+ */
+export function useReportUnsavedChanges() {
+	const { tabs } = useTabs();
+	const hasUnsavedChanges = tabs.some( ( tab ) => tab.isDirty );
+	useEffect( () => {
+		invoke( 'set_unsaved_changes', { value: hasUnsavedChanges } ).catch(
+			() => {}
+		);
+	}, [ hasUnsavedChanges ] );
 }
