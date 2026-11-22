@@ -1,7 +1,13 @@
 /**
  * External dependencies
  */
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import {
+	useEffect,
+	useRef,
+	useState,
+	type KeyboardEvent,
+	type PointerEvent,
+} from 'react';
 import clsx from 'clsx';
 
 /**
@@ -108,10 +114,19 @@ export function TabBar( { onNewTab, onCloseTab, onFocusEditor }: Props ) {
 		}
 		event.preventDefault();
 		tabsStore.activate( tabs[ next ].id );
-		listRef.current
-			?.querySelectorAll< HTMLElement >( '[role="tab"]' )
-			[ next ]?.focus();
 	};
+
+	// While a tab has focus, move it to the newly active tab, whether the
+	// arrow keys or a shortcut such as Ctrl+Tab switched tabs.
+	useEffect( () => {
+		const list = listRef.current;
+		if ( ! list?.contains( list.ownerDocument.activeElement ) ) {
+			return;
+		}
+		list.querySelector< HTMLElement >(
+			'[role="tab"][aria-selected="true"]'
+		)?.focus();
+	}, [ activeId ] );
 
 	return (
 		<div className="minidit-tab-bar">
