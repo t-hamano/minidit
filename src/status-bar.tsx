@@ -13,6 +13,7 @@ import {
 	LINE_ENDINGS,
 	type LineEnding,
 } from './files/text-format';
+import { DEFAULT_SETTINGS, MAX_ZOOM, MIN_ZOOM } from './settings/settings';
 import type { Tab } from './tabs/store';
 import type { TabCommands } from './tabs/use-tab-commands';
 
@@ -21,6 +22,9 @@ type Props = {
 	commands: TabCommands;
 	/** Zoom level in percent. */
 	zoom: number;
+	onZoomIn: () => void;
+	onZoomOut: () => void;
+	onResetZoom: () => void;
 };
 
 const triggerButton = (
@@ -35,15 +39,55 @@ const triggerButton = (
 /**
  * Shows the zoom level, encoding, and line ending of the active tab.
  *
- * @param props          Component properties.
- * @param props.tab      The active tab.
- * @param props.commands File and tab operations.
- * @param props.zoom     Zoom level in percent.
+ * @param props             Component properties.
+ * @param props.tab         The active tab.
+ * @param props.commands    File and tab operations.
+ * @param props.zoom        Zoom level in percent.
+ * @param props.onZoomIn    Steps the zoom level up.
+ * @param props.onZoomOut   Steps the zoom level down.
+ * @param props.onResetZoom Resets the zoom level.
  */
-export function StatusBar( { tab, commands, zoom }: Props ) {
+export function StatusBar( {
+	tab,
+	commands,
+	zoom,
+	onZoomIn,
+	onZoomOut,
+	onResetZoom,
+}: Props ) {
 	return (
 		<footer className="minidit-status-bar">
-			<span className="minidit-status-bar__item">{ zoom }%</span>
+			<Menu.Root>
+				<Menu.Trigger
+					render={ triggerButton }
+					aria-label={ `Zoom: ${ zoom }%` }
+				>
+					{ zoom }%
+				</Menu.Trigger>
+				<Menu.Popup>
+					{ /* Stays open so the zoom level can be stepped repeatedly. */ }
+					<Menu.Item
+						onClick={ onZoomIn }
+						disabled={ zoom >= MAX_ZOOM }
+						closeOnClick={ false }
+					>
+						<Menu.ItemLabel>Zoom In</Menu.ItemLabel>
+					</Menu.Item>
+					<Menu.Item
+						onClick={ onZoomOut }
+						disabled={ zoom <= MIN_ZOOM }
+						closeOnClick={ false }
+					>
+						<Menu.ItemLabel>Zoom Out</Menu.ItemLabel>
+					</Menu.Item>
+					<Menu.Item
+						onClick={ onResetZoom }
+						disabled={ zoom === DEFAULT_SETTINGS.zoom }
+					>
+						<Menu.ItemLabel>Reset Zoom</Menu.ItemLabel>
+					</Menu.Item>
+				</Menu.Popup>
+			</Menu.Root>
 			<Menu.Root>
 				<Menu.Trigger
 					render={ triggerButton }
