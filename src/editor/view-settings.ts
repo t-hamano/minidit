@@ -9,8 +9,9 @@ import { lineNumbers, type EditorView } from '@codemirror/view';
  * Internal dependencies
  */
 import type { Settings } from '../settings/settings';
+import type { ColorScheme } from '../theme/use-color-scheme';
 import { indentationExtensions, type Indentation } from './indent';
-import { syntaxColors } from './highlight';
+import { editorColors } from './highlight';
 import { fontTheme } from './theme';
 import { showWhitespace } from './whitespace';
 
@@ -24,6 +25,8 @@ export type ViewSettings = Pick<
 	indentation: Indentation;
 	/** The active tab's language, or `null` for plain text. */
 	language: Language | null;
+	/** The color scheme to display. */
+	colorScheme: ColorScheme;
 };
 
 /**
@@ -40,7 +43,8 @@ function extensionsFor( settings: ViewSettings ) {
 		settings.lineNumbers ? lineNumbers() : [],
 		settings.showWhitespace ? showWhitespace : [],
 		indentationExtensions( settings.indentation ),
-		settings.language ? [ settings.language, syntaxColors ] : [],
+		editorColors( settings.colorScheme ),
+		settings.language ?? [],
 	];
 }
 

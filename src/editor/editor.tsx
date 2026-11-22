@@ -27,6 +27,7 @@ import {
 import { loadedLanguage, loadLanguage } from './languages';
 import { applyViewSettings, type ViewSettings } from './view-settings';
 import type { Settings } from '../settings/settings';
+import { useColorScheme } from '../theme/use-color-scheme';
 
 export type EditorHandle = {
 	focus: () => void;
@@ -114,6 +115,7 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 		}
 	}, [ tab.path ] );
 	const language = loadedLanguage( tab.path );
+	const colorScheme = useColorScheme( settings.theme );
 
 	const viewSettings = useMemo< ViewSettings >(
 		() => ( {
@@ -127,6 +129,7 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 				width: settings.tabWidth,
 			},
 			language,
+			colorScheme,
 		} ),
 		[
 			settings.fontFamily,
@@ -138,6 +141,7 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 			settings.indentType,
 			tab.indentation,
 			language,
+			colorScheme,
 		]
 	);
 	const viewSettingsRef = useRef( viewSettings );

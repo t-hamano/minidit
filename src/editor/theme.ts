@@ -30,14 +30,12 @@ export function fontTheme( fontFamily: string, fontSize: number ) {
 }
 
 /**
- * Editor colors come from the `@wordpress/theme` design tokens, so they
- * follow the light / dark theme without reconfiguring CodeMirror.
+ * The editor's layout. Its colors are left to CodeMirror's themes; see
+ * `editorColors`.
  */
 export const editorTheme = EditorView.theme( {
 	'&': {
 		height: '100%',
-		color: 'var(--wpds-color-foreground-content-neutral)',
-		backgroundColor: 'var(--wpds-color-background-surface-neutral)',
 	},
 	'&.cm-focused': {
 		outline: 'none',
@@ -47,12 +45,6 @@ export const editorTheme = EditorView.theme( {
 	},
 	'.cm-content': {
 		padding: 'var(--wpds-dimension-padding-sm) 0',
-		caretColor: 'var(--wpds-color-foreground-content-neutral)',
-	},
-	'.cm-gutters': {
-		color: 'var(--wpds-color-foreground-content-neutral-weak)',
-		backgroundColor: 'var(--wpds-color-background-surface-neutral)',
-		border: 'none',
 	},
 	'.cm-lineNumbers .cm-gutterElement': {
 		paddingInlineStart: 'var(--wpds-dimension-padding-md)',
@@ -63,24 +55,5 @@ export const editorTheme = EditorView.theme( {
 	// Holds CodeMirror's hidden search panel; the app draws its own bar.
 	'.cm-panels-top': {
 		border: 'none',
-	},
-	'.cm-fullWidthSpace': {
-		outline:
-			'var(--wpds-border-width-xs) dashed var(--wpds-color-stroke-surface-neutral-strong)',
-		outlineOffset: 'calc(-1 * var(--wpds-border-width-xs))',
-	},
-	'.cm-searchMatch': {
-		backgroundColor: 'var(--wpds-color-background-surface-warning)',
-		outline:
-			'var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-warning)',
-	},
-	'.cm-searchMatch-selected': {
-		backgroundColor: 'var(--wpds-color-background-surface-brand)',
-		outline:
-			'var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-brand-strong)',
-	},
-	'.cm-content ::selection, &.cm-focused .cm-content ::selection': {
-		backgroundColor:
-			'var(--wpds-color-background-interactive-brand-weak-active)',
 	},
 } );
