@@ -3,7 +3,7 @@ use tauri::{Runtime, WebviewWindow};
 /// Turns off the WebView's own browser shortcuts on Windows, such as Ctrl+F
 /// for its find bar, F3, Ctrl+P for printing, and Ctrl+R / F5 for reloading
 /// the page, which would lose unsaved text. The keys still reach the page
-/// but not the menu bar, so the page runs Ctrl+F itself (see
+/// but not the menu bar, so the page runs Ctrl+F, Ctrl+H and F3 itself (see
 /// `useBrowserKeyShortcuts`). Editing keys such as Ctrl+C and Ctrl+Z are
 /// not affected.
 ///
