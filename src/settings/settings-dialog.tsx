@@ -251,6 +251,7 @@ export function SettingsDialog( { open, onClose }: Props ) {
 							/>
 							<Choice
 								label="Indentation"
+								description="Used for new files. Opened files keep the indentation they already use."
 								options={ INDENT_OPTIONS }
 								value={ settings.indentType }
 								onChange={ ( indentType ) =>
