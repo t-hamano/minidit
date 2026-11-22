@@ -26,10 +26,10 @@ body {
 	display: flex;
 	flex-shrink: 0;
 	align-items: center;
-	gap: 4px;
-	padding: 4px 4px 0;
+	gap: var(--wpds-dimension-gap-xs);
+	padding: var(--wpds-dimension-padding-xs) var(--wpds-dimension-padding-xs) 0;
 	background: var(--wpds-color-background-surface-neutral-weak);
-	border-bottom: 1px solid var(--wpds-color-stroke-surface-neutral);
+	border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
 	user-select: none;
 }
 
@@ -42,7 +42,7 @@ body {
 
 .minidit-tab-bar__new {
 	flex-shrink: 0;
-	margin-bottom: 4px;
+	margin-bottom: var(--wpds-dimension-gap-xs);
 }
 
 .minidit-tab {
@@ -50,10 +50,10 @@ body {
 	display: flex;
 	flex-shrink: 0;
 	align-items: center;
-	gap: 2px;
-	max-width: 200px;
-	height: 32px;
-	padding: 0 4px 0 12px;
+	gap: var(--wpds-dimension-gap-xs);
+	max-width: var(--wpds-dimension-surface-width-xs);
+	height: var(--wpds-dimension-size-md);
+	padding: 0 var(--wpds-dimension-padding-xs) 0 var(--wpds-dimension-padding-md);
 	color: var(--wpds-color-foreground-content-neutral-weak);
 	border-radius: var(--wpds-border-radius-sm) var(--wpds-border-radius-sm) 0 0;
 	cursor: default;
@@ -66,30 +66,30 @@ body {
 .minidit-tab.is-active {
 	color: var(--wpds-color-foreground-content-neutral);
 	background: var(--wpds-color-background-surface-neutral);
-	box-shadow: 0 1px 0 var(--wpds-color-background-surface-neutral);
+	box-shadow: 0 var(--wpds-border-width-xs) 0 var(--wpds-color-background-surface-neutral);
 }
 
 .minidit-tab.is-drop-before::before,
 .minidit-tab.is-drop-after::after {
 	position: absolute;
-	top: 4px;
-	bottom: 4px;
-	width: 2px;
+	top: var(--wpds-dimension-size-5xs);
+	bottom: var(--wpds-dimension-size-5xs);
+	width: var(--wpds-border-width-sm);
 	content: "";
 	background: var(--wpds-color-stroke-focus);
 }
 
 .minidit-tab.is-drop-before::before {
-	left: -1px;
+	left: calc(var(--wpds-border-width-xs) * -1);
 }
 
 .minidit-tab.is-drop-after::after {
-	right: -1px;
+	right: calc(var(--wpds-border-width-xs) * -1);
 }
 
 .minidit-tab__label {
 	display: flex;
-	gap: 4px;
+	gap: var(--wpds-dimension-gap-xs);
 	align-items: center;
 	min-width: 0;
 	font-size: var(--wpds-typography-font-size-md);
@@ -113,17 +113,17 @@ body {
 .minidit-status-bar {
 	display: flex;
 	flex-shrink: 0;
-	gap: 4px;
+	gap: var(--wpds-dimension-gap-xs);
 	align-items: center;
 	justify-content: flex-end;
-	padding: 2px 8px;
+	padding: var(--wpds-dimension-padding-xs) var(--wpds-dimension-padding-sm);
 	font-size: var(--wpds-typography-font-size-sm);
 	color: var(--wpds-color-foreground-content-neutral-weak);
 	background: var(--wpds-color-background-surface-neutral-weak);
-	border-top: 1px solid var(--wpds-color-stroke-surface-neutral);
+	border-top: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
 	user-select: none;
 }
 
 .minidit-status-bar__item {
-	padding: 0 8px;
+	padding: 0 var(--wpds-dimension-padding-sm);
 }

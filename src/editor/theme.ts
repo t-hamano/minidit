@@ -29,11 +29,11 @@ export const editorTheme = EditorView.theme( {
 		lineHeight: '1.5',
 	},
 	'.cm-content': {
-		padding: '8px 0',
+		padding: 'var(--wpds-dimension-padding-sm) 0',
 		caretColor: 'var(--wpds-color-foreground-content-neutral)',
 	},
 	'.cm-line': {
-		padding: '0 12px',
+		padding: '0 var(--wpds-dimension-padding-md)',
 	},
 	'.cm-content ::selection, &.cm-focused .cm-content ::selection': {
 		backgroundColor:
