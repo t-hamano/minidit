@@ -5,6 +5,7 @@ use tauri::Manager;
 use text::{Encoding, LineEnding};
 
 mod files;
+mod fonts;
 mod settings;
 mod text;
 
@@ -81,6 +82,12 @@ async fn write_text_file(
     .await
 }
 
+/// Lists the installed font families, for the font setting.
+#[tauri::command]
+async fn list_fonts() -> Result<Vec<String>, String> {
+    run_blocking(|| Ok(fonts::installed_families()), |error| error).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -108,6 +115,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_text_file,
             write_text_file,
+            list_fonts,
             settings::read_settings,
             settings::write_settings,
             settings::save_window_state

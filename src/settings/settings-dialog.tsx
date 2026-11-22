@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 /**
  * WordPress dependencies
@@ -9,6 +9,7 @@ import { useState, type ReactNode } from 'react';
 import {
 	Dialog,
 	InputControl,
+	SearchableSelectControl,
 	SelectControl,
 	Stack,
 	SwitchControl,
@@ -19,6 +20,7 @@ import {
  * Internal dependencies
  */
 import {
+	listFonts,
 	MAX_FONT_SIZE,
 	MIN_FONT_SIZE,
 	TAB_WIDTHS,
@@ -27,7 +29,7 @@ import {
 import { useSettings } from './settings-provider';
 
 const isMac = navigator.userAgent.includes( 'Mac' );
-const DEFAULT_FONT_NAME = isMac ? 'Menlo' : 'Consolas';
+const DEFAULT_FONT_LABEL = `Default (${ isMac ? 'Menlo' : 'Consolas' })`;
 
 type SelectItem = { value: string; label: string };
 
@@ -134,6 +136,24 @@ export function SettingsDialog( { open, onClose }: Props ) {
 	// Kept as typed, so the field can be empty or out of range while
 	// editing; only valid sizes are applied.
 	const [ fontSize, setFontSize ] = useState( String( settings.fontSize ) );
+	const [ fonts, setFonts ] = useState< string[] >( [] );
+
+	useEffect( () => {
+		if ( open ) {
+			listFonts().then( setFonts );
+		}
+	}, [ open ] );
+
+	const fontItems = useMemo( () => {
+		const names = fonts.includes( settings.fontFamily )
+			? fonts
+			: // Keep a font that is no longer installed selectable.
+				[ settings.fontFamily, ...fonts ].filter( Boolean );
+		return [
+			{ value: '', label: DEFAULT_FONT_LABEL },
+			...names.map( ( name ) => ( { value: name, label: name } ) ),
+		];
+	}, [ fonts, settings.fontFamily ] );
 
 	return (
 		<Dialog.Root
@@ -162,13 +182,21 @@ export function SettingsDialog( { open, onClose }: Props ) {
 							/>
 						</Section>
 						<Section title="Appearance">
-							<InputControl
+							<SearchableSelectControl
 								label="Font"
-								placeholder={ DEFAULT_FONT_NAME }
-								value={ settings.fontFamily }
-								onChange={ ( event ) =>
+								items={ fontItems }
+								value={
+									fontItems.find(
+										( item ) =>
+											item.value === settings.fontFamily
+									) ?? fontItems[ 0 ]
+								}
+								isItemEqualToValue={ ( item, selected ) =>
+									item.value === selected.value
+								}
+								onValueChange={ ( item ) =>
 									updateSettings( {
-										fontFamily: event.target.value,
+										fontFamily: item?.value ?? '',
 									} )
 								}
 							/>

@@ -123,3 +123,14 @@ export function flushSettings(): Promise< void > {
 export function saveWindowState(): Promise< void > {
 	return invoke( 'save_window_state' );
 }
+
+let fontList: Promise< string[] > | null = null;
+
+/** The installed font families. Read once, when first needed. */
+export function listFonts(): Promise< string[] > {
+	fontList ??= invoke< string[] >( 'list_fonts' ).catch( () => {
+		fontList = null;
+		return [];
+	} );
+	return fontList;
+}
