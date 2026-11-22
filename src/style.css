@@ -26,7 +26,7 @@ body {
 	display: flex;
 	flex-shrink: 0;
 	align-items: center;
-	gap: var(--wpds-dimension-gap-xs);
+	gap: var(--wpds-dimension-gap-sm);
 	background: var(--wpds-color-background-surface-neutral-weak);
 	border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral-weak);
 	user-select: none;
@@ -80,7 +80,7 @@ body {
 .minidit-tab__button {
 	min-width: 96px;
 	max-width: 200px;
-	padding-inline: var(--wpds-dimension-size-4xs) var(--wpds-dimension-size-md);
+	padding-inline: var(--wpds-dimension-size-4xs) calc(var(--wpds-dimension-size-xs) + var(--wpds-dimension-gap-sm) * 2);
 	border-radius: 0;
 	border-top-color: var(--wpds-color-stroke-surface-neutral-weak);
 	border-right-color: var(--wpds-color-stroke-surface-neutral-weak);
@@ -96,7 +96,7 @@ body {
 
 	position: absolute;
 	top: 50%;
-	right: var(--wpds-dimension-size-5xs);
+	right: var(--wpds-dimension-gap-sm);
 	color: var(--wpds-color-foreground-content-neutral-weak);
 	opacity: 0;
 	transform: translateY(-50%);
@@ -153,7 +153,7 @@ body {
 	display: grid;
 	flex-shrink: 0;
 	grid-template-columns: auto minmax(0, 1fr) auto;
-	gap: var(--wpds-dimension-gap-xs);
+	gap: var(--wpds-dimension-gap-sm);
 	padding: var(--wpds-dimension-padding-xs) var(--wpds-dimension-padding-sm);
 	background: var(--wpds-color-background-surface-neutral-weak);
 	border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
@@ -171,7 +171,7 @@ body {
 .minidit-search-bar__actions {
 	display: flex;
 	align-items: center;
-	gap: var(--wpds-dimension-gap-xs);
+	gap: var(--wpds-dimension-gap-sm);
 }
 
 .minidit-search-bar__count {
