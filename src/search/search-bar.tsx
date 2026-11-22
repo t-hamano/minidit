@@ -24,7 +24,7 @@ import {
 	formatCapitalize,
 	replace,
 } from '@wordpress/icons';
-import { IconButton, Input } from '@wordpress/ui';
+import { IconButton, InputLayout } from '@wordpress/ui';
 
 /**
  * Internal dependencies
@@ -61,6 +61,25 @@ function formatCount( { current, total, capped }: MatchInfo ) {
 	const all = capped ? `${ MAX_COUNTED_MATCHES }+` : String( total );
 	return current ? `${ current } of ${ all }` : `${ all } results`;
 }
+
+/**
+ * A 24px text field. `Input` only comes in 32px and 40px, so this puts a
+ * native input in the `InputLayout` that `Input` itself is built on.
+ */
+const SearchInput = forwardRef< HTMLInputElement, ComponentProps< 'input' > >(
+	function MiniditSearchInput( props, ref ) {
+		return (
+			<InputLayout size="small" className="minidit-search-input">
+				<input
+					ref={ ref }
+					type="text"
+					className="minidit-search-input__field"
+					{ ...props }
+				/>
+			</InputLayout>
+		);
+	}
+);
 
 /**
  * The find and replace bar shown above the editor.
@@ -177,7 +196,7 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 				icon={ icon }
 				variant={ options[ key ] ? 'solid' : 'minimal' }
 				tone="neutral"
-				size="compact"
+				size="small"
 				aria-pressed={ options[ key ] }
 				onClick={ () =>
 					onChange( { ...options, [ key ]: ! options[ key ] } )
@@ -195,7 +214,7 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 				icon={ icon }
 				variant="minimal"
 				tone="neutral"
-				size="compact"
+				size="small"
 				onClick={ () => run( command ) }
 			/>
 		);
@@ -211,14 +230,13 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 					icon={ replaceOpen ? chevronDown : chevronRight }
 					variant="minimal"
 					tone="neutral"
-					size="compact"
+					size="small"
 					aria-expanded={ replaceOpen }
 					onClick={ onToggleReplace }
 				/>
 				<div className="minidit-search-bar__row">
-					<Input
+					<SearchInput
 						ref={ findRef }
-						size="compact"
 						placeholder="Find"
 						aria-label="Find"
 						value={ options.search }
@@ -253,16 +271,15 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 							icon={ closeSmall }
 							variant="minimal"
 							tone="neutral"
-							size="compact"
+							size="small"
 							onClick={ onClose }
 						/>
 					</div>
 				</div>
 				{ replaceOpen && (
 					<div className="minidit-search-bar__row">
-						<Input
+						<SearchInput
 							ref={ replaceRef }
-							size="compact"
 							placeholder="Replace"
 							aria-label="Replace"
 							value={ options.replace }
