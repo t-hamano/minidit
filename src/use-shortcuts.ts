@@ -3,24 +3,22 @@
  */
 import { useEffect } from 'react';
 
+/**
+ * Internal dependencies
+ */
+import type { TabCommands } from './tabs/use-tab-commands';
+
 const isMac = navigator.userAgent.includes( 'Mac' );
 
-type Shortcuts = {
-	newFile: () => void;
-	openFile: () => void;
-	save: () => void;
-	saveAs: () => void;
-};
-
 /**
- * Keyboard shortcuts for file operations.
+ * Keyboard shortcuts for file and tab operations.
  *
  * These are temporary until the native menu bar, which will own the
  * accelerators, is added.
  *
- * @param shortcuts Commands to run.
+ * @param commands Commands to run.
  */
-export function useShortcuts( shortcuts: Shortcuts ) {
+export function useShortcuts( commands: TabCommands ) {
 	useEffect( () => {
 		const onKeyDown = ( event: KeyboardEvent ) => {
 			const mod = isMac ? event.metaKey : event.ctrlKey;
@@ -28,13 +26,15 @@ export function useShortcuts( shortcuts: Shortcuts ) {
 				return;
 			}
 			const key = event.key.toLowerCase();
-			let command: ( () => void ) | undefined;
-			if ( key === 'n' && ! event.shiftKey ) {
-				command = shortcuts.newFile;
-			} else if ( key === 'o' && ! event.shiftKey ) {
-				command = shortcuts.openFile;
+			let command: ( () => unknown ) | undefined;
+			if ( ! event.shiftKey && key === 'n' ) {
+				command = commands.newTab;
+			} else if ( ! event.shiftKey && key === 'o' ) {
+				command = commands.openFiles;
+			} else if ( ! event.shiftKey && key === 'w' ) {
+				command = () => commands.closeTab();
 			} else if ( key === 's' ) {
-				command = event.shiftKey ? shortcuts.saveAs : shortcuts.save;
+				command = event.shiftKey ? commands.saveAs : commands.save;
 			}
 			if ( command ) {
 				event.preventDefault();
@@ -43,5 +43,5 @@ export function useShortcuts( shortcuts: Shortcuts ) {
 		};
 		window.addEventListener( 'keydown', onKeyDown, true );
 		return () => window.removeEventListener( 'keydown', onKeyDown, true );
-	}, [ shortcuts ] );
+	}, [ commands ] );
 }
