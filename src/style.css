@@ -211,6 +211,14 @@ body {
 	text-align: end;
 }
 
+.minidit-settings {
+	display: grid;
+	grid-template-columns: 160px 1fr;
+	gap: 24px;
+	align-items: start;
+	min-height: 520px;
+}
+
 .minidit-about__error {
 	overflow-wrap: anywhere;
 }
