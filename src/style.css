@@ -179,6 +179,34 @@ body {
 	gap: var(--wpds-dimension-gap-sm);
 }
 
+/* IconButton draws 24px icons, which fill its 24px small size. */
+.minidit-search-bar button svg {
+	width: var(--wpds-dimension-size-xs);
+	height: var(--wpds-dimension-size-xs);
+}
+
+/* Matches the `Input` field of @wordpress/ui, which has no 24px size. */
+.minidit-search-input:focus-within {
+	outline: var(--wpds-border-width-focus) solid var(--focus-color, var(--wpds-color-stroke-focus));
+	outline-offset: var(--wpds-border-width-focus);
+}
+
+.minidit-search-input__field {
+	box-sizing: border-box;
+	width: 100%;
+	min-width: 0;
+	padding: 0 var(--wpds-dimension-padding-sm);
+	font: inherit;
+	color: var(--wpds-color-foreground-interactive-neutral);
+	background: transparent;
+	border: none;
+	outline: none;
+
+	&::placeholder {
+		color: var(--wpds-color-foreground-interactive-neutral-weak);
+	}
+}
+
 .minidit-search-bar__count {
 	flex-shrink: 0;
 	min-width: 6em;
