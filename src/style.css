@@ -44,23 +44,21 @@ body {
 	flex-shrink: 0;
 }
 
+.minidit-tab-bar__new svg {
+	width: var(--wpds-dimension-size-2xs);
+	height: var(--wpds-dimension-size-2xs);
+}
+
 .minidit-tab {
 	position: relative;
 	display: flex;
 	flex-shrink: 0;
 	max-width: var(--wpds-dimension-surface-width-xs);
-	height: var(--wpds-dimension-size-md);
-	color: var(--wpds-color-foreground-content-neutral-weak);
 	border-radius: var(--wpds-border-radius-sm) var(--wpds-border-radius-sm) 0 0;
 	cursor: default;
 }
 
-.minidit-tab:hover:not(.is-active) {
-	color: var(--wpds-color-foreground-content-neutral);
-}
-
 .minidit-tab.is-active {
-	color: var(--wpds-color-foreground-content-neutral);
 	background: var(--wpds-color-background-surface-neutral);
 	box-shadow: 0 var(--wpds-border-width-xs) 0 var(--wpds-color-background-surface-neutral);
 }
@@ -84,22 +82,15 @@ body {
 }
 
 .minidit-tab__button {
-	display: flex;
+	--wp-ui-button-font-weight: var(--wpds-typography-font-weight-default);
+
 	gap: var(--wpds-dimension-gap-xs);
-	align-items: center;
-	min-width: 0;
-	padding: 0 calc(var(--wpds-dimension-size-sm) + var(--wpds-dimension-padding-xs)) 0 var(--wpds-dimension-padding-md);
-	font: inherit;
-	font-size: var(--wpds-typography-font-size-md);
-	color: inherit;
-	cursor: inherit;
-	background: none;
-	border: 0;
+	padding-inline-end: calc(var(--wpds-dimension-size-sm) + var(--wpds-dimension-padding-xs));
 	border-radius: inherit;
 }
 
-.minidit-tab__button:focus-visible {
-	outline: var(--wpds-border-width-focus) solid var(--wpds-color-stroke-focus);
+/* Draw the focus ring inside, so the scrolling tab list does not clip it. */
+.minidit-tab__button:focus {
 	outline-offset: calc(var(--wpds-border-width-focus) * -1);
 }
 
