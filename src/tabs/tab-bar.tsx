@@ -95,7 +95,7 @@ export function TabBar( { onNewTab, onCloseTab, onFocusEditor }: Props ) {
 				icon={ plus }
 				variant="minimal"
 				tone="neutral"
-				size="compact"
+				size="small"
 				onClick={ onNewTab }
 			/>
 		</div>
@@ -121,9 +121,10 @@ function TabItem( {
 }: TabItemProps ) {
 	const title = tabTitle( tab );
 	return (
-		// The `tab` role sits on the label, so that the close button is not
-		// nested inside it. Mouse handling here covers the whole tab.
-		// eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+		// The close button sits on top of the tab button instead of inside it,
+		// so that the two buttons are not nested. Mouse handling here covers
+		// the whole tab.
+		// eslint-disable-next-line jsx-a11y/no-static-element-interactions
 		<div
 			className={ clsx( 'minidit-tab', {
 				'is-active': isActive,
@@ -141,8 +142,6 @@ function TabItem( {
 					tabsStore.activate( tab.id );
 				}
 			} }
-			// Return focus to the editor after a click, but not during a drag.
-			onClick={ onFocusEditor }
 			onAuxClick={ ( event ) => {
 				if ( event.button === 1 ) {
 					onClose();
@@ -152,14 +151,18 @@ function TabItem( {
 			<Tooltip.Root disabled={ ! tab.path }>
 				<Tooltip.Trigger
 					render={
-						<span
-							className="minidit-tab__label"
+						<button
+							type="button"
+							className="minidit-tab__button"
 							role="tab"
 							aria-selected={ isActive }
 							tabIndex={ isActive ? 0 : -1 }
-							onKeyDown={ ( event ) => {
-								if ( event.key === 'Enter' ) {
-									tabsStore.activate( tab.id );
+							onClick={ ( event ) => {
+								tabsStore.activate( tab.id );
+								// Return focus to the editor after a mouse click,
+								// but keep it on the tab for the keyboard.
+								if ( event.detail > 0 ) {
+									onFocusEditor();
 								}
 							} }
 						/>
@@ -185,10 +188,7 @@ function TabItem( {
 				tone="neutral"
 				size="small"
 				onMouseDown={ ( event ) => event.stopPropagation() }
-				onClick={ ( event ) => {
-					event.stopPropagation();
-					onClose();
-				} }
+				onClick={ onClose }
 			/>
 		</div>
 	);
