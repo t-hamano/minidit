@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { open, save } from '@tauri-apps/plugin-dialog';
 
 /**
@@ -86,4 +87,59 @@ export function pickFileToSave(
 	defaultPath?: string
 ): Promise< string | null > {
 	return save( { defaultPath, filters: FILTERS } );
+}
+
+/**
+ * A file that another app changed or deleted.
+ */
+export type FileChange = {
+	path: string;
+	deleted: boolean;
+};
+
+/**
+ * Watches exactly the given files for changes by other apps.
+ *
+ * @param paths The open files.
+ */
+export function watchFiles( paths: string[] ): Promise< void > {
+	return invoke( 'watch_files', { paths } );
+}
+
+/**
+ * Tells the app that the window is ready to open files.
+ *
+ * @return The files waiting to open, such as those named on the command
+ *         line.
+ */
+export function takePendingFiles(): Promise< string[] > {
+	return invoke( 'take_pending_files' );
+}
+
+/**
+ * Listens for files that the OS asks the running app to open.
+ *
+ * @param callback Receives the files.
+ * @return Stops listening.
+ */
+export function onOpenFiles(
+	callback: ( paths: string[] ) => void
+): Promise< UnlistenFn > {
+	return listen< string[] >( 'open-files', ( event ) =>
+		callback( event.payload )
+	);
+}
+
+/**
+ * Listens for changes to the watched files by other apps.
+ *
+ * @param callback Receives each change.
+ * @return Stops listening.
+ */
+export function onFileChanged(
+	callback: ( change: FileChange ) => void
+): Promise< UnlistenFn > {
+	return listen< FileChange >( 'file-changed', ( event ) =>
+		callback( event.payload )
+	);
 }

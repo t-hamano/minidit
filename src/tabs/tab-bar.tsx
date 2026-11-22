@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { useState, type DragEvent } from 'react';
+import { useRef, useState, type PointerEvent } from 'react';
 import clsx from 'clsx';
 
 /**
@@ -21,47 +21,75 @@ type Props = {
 	onCloseTab: ( id: number ) => void;
 };
 
-const DRAG_TYPE = 'application/x-minidit-tab';
+/** How far, in pixels, the pointer moves before a tab starts dragging. */
+const DRAG_THRESHOLD = 4;
 
 export function TabBar( { onNewTab, onCloseTab, onFocusEditor }: Props ) {
 	const { tabs, activeId } = useTabs();
 	const [ dropIndex, setDropIndex ] = useState< number | null >( null );
+	const listRef = useRef< HTMLDivElement >( null );
 
-	const onDragOver = ( event: DragEvent, index: number ) => {
-		if ( ! event.dataTransfer.types.includes( DRAG_TYPE ) ) {
-			return;
-		}
-		event.preventDefault();
-		const { left, width } = event.currentTarget.getBoundingClientRect();
-		setDropIndex( event.clientX < left + width / 2 ? index : index + 1 );
+	/**
+	 * The index that a tab dropped at a horizontal position moves to.
+	 *
+	 * @param clientX The pointer's position.
+	 */
+	const dropIndexAt = ( clientX: number ) => {
+		const items = Array.from( listRef.current?.children ?? [] );
+		const index = items.findIndex( ( item ) => {
+			const { left, width } = item.getBoundingClientRect();
+			return clientX < left + width / 2;
+		} );
+		return index === -1 ? items.length : index;
 	};
 
-	const onDrop = ( event: DragEvent ) => {
-		const id = Number( event.dataTransfer.getData( DRAG_TYPE ) );
-		const from = tabs.findIndex( ( tab ) => tab.id === id );
-		if ( from !== -1 && dropIndex !== null ) {
-			event.preventDefault();
-			tabsStore.move( id, dropIndex > from ? dropIndex - 1 : dropIndex );
+	// Uses pointer events instead of HTML drag and drop, which does not
+	// work in the window on Windows while dropping files onto it is
+	// enabled.
+	const startDrag = ( event: PointerEvent, id: number ) => {
+		if ( event.button !== 0 ) {
+			return;
 		}
-		setDropIndex( null );
+		const { ownerDocument } = event.currentTarget;
+		const startX = event.clientX;
+		let dragging = false;
+
+		const onMove = ( moveEvent: globalThis.PointerEvent ) => {
+			if (
+				! dragging &&
+				Math.abs( moveEvent.clientX - startX ) < DRAG_THRESHOLD
+			) {
+				return;
+			}
+			dragging = true;
+			setDropIndex( dropIndexAt( moveEvent.clientX ) );
+		};
+		const onEnd = ( endEvent: globalThis.PointerEvent ) => {
+			ownerDocument.removeEventListener( 'pointermove', onMove );
+			ownerDocument.removeEventListener( 'pointerup', onEnd );
+			ownerDocument.removeEventListener( 'pointercancel', onEnd );
+			setDropIndex( null );
+			if ( ! dragging || endEvent.type === 'pointercancel' ) {
+				return;
+			}
+			const index = dropIndexAt( endEvent.clientX );
+			const from = tabsStore
+				.getSnapshot()
+				.tabs.findIndex( ( tab ) => tab.id === id );
+			if ( from !== -1 ) {
+				tabsStore.move( id, index > from ? index - 1 : index );
+			}
+		};
+		ownerDocument.addEventListener( 'pointermove', onMove );
+		ownerDocument.addEventListener( 'pointerup', onEnd );
+		ownerDocument.addEventListener( 'pointercancel', onEnd );
 	};
 
 	return (
 		<div className="minidit-tab-bar">
-			<div
-				className="minidit-tab-bar__tabs"
-				onDrop={ onDrop }
-				onDragLeave={ ( event ) => {
-					if (
-						! event.currentTarget.contains(
-							event.relatedTarget as Node | null
-						)
-					) {
-						setDropIndex( null );
-					}
-				} }
-			>
+			<div className="minidit-tab-bar__tabs">
 				<div
+					ref={ listRef }
 					className="minidit-tab-bar__list"
 					role="tablist"
 					aria-label="Open files"
@@ -82,8 +110,8 @@ export function TabBar( { onNewTab, onCloseTab, onFocusEditor }: Props ) {
 										: undefined
 							}
 							onClose={ () => onCloseTab( tab.id ) }
-							onDragOver={ ( event ) =>
-								onDragOver( event, index )
+							onPointerDown={ ( event ) =>
+								startDrag( event, tab.id )
 							}
 						/>
 					) ) }
@@ -108,7 +136,7 @@ type TabItemProps = {
 	isActive: boolean;
 	dropSide?: 'before' | 'after';
 	onClose: () => void;
-	onDragOver: ( event: DragEvent ) => void;
+	onPointerDown: ( event: PointerEvent ) => void;
 };
 
 function TabItem( {
@@ -117,7 +145,7 @@ function TabItem( {
 	isActive,
 	dropSide,
 	onClose,
-	onDragOver,
+	onPointerDown,
 }: TabItemProps ) {
 	const title = tabTitle( tab );
 	return (
@@ -131,12 +159,7 @@ function TabItem( {
 				'is-drop-before': dropSide === 'before',
 				'is-drop-after': dropSide === 'after',
 			} ) }
-			draggable
-			onDragStart={ ( event ) => {
-				event.dataTransfer.setData( DRAG_TYPE, String( tab.id ) );
-				event.dataTransfer.effectAllowed = 'move';
-			} }
-			onDragOver={ onDragOver }
+			onPointerDown={ onPointerDown }
 			onMouseDown={ ( event ) => {
 				if ( event.button === 0 ) {
 					tabsStore.activate( tab.id );
@@ -188,6 +211,7 @@ function TabItem( {
 				tone="neutral"
 				size="small"
 				onMouseDown={ ( event ) => event.stopPropagation() }
+				onPointerDown={ ( event ) => event.stopPropagation() }
 				onClick={ onClose }
 			/>
 		</div>

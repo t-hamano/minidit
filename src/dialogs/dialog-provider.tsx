@@ -25,6 +25,8 @@ export type ConfirmOptions = {
 	title: string;
 	message: string;
 	confirmLabel: string;
+	/** Defaults to `Cancel`. */
+	cancelLabel?: string;
 	/** Colors the confirm button as destructive. */
 	irreversible?: boolean;
 };
@@ -41,7 +43,7 @@ type Dialogs = {
 	/** Shows a message with a single `OK` button. */
 	showMessage: ( options: MessageOptions ) => Promise< void >;
 	/**
-	 * Asks for confirmation with `Cancel` and a confirm button.
+	 * Asks for confirmation with a cancel and a confirm button.
 	 * Resolves to whether the user confirmed.
 	 */
 	confirm: ( options: ConfirmOptions ) => Promise< boolean >;
@@ -142,7 +144,9 @@ export function DialogProvider( { children }: { children: ReactNode } ) {
 						}
 						title={ current.options.title }
 						description={ current.options.message }
-						cancelButtonText="Cancel"
+						cancelButtonText={
+							current.options.cancelLabel ?? 'Cancel'
+						}
 						confirmButtonText={ current.options.confirmLabel }
 					/>
 				</AlertDialog.Root>
