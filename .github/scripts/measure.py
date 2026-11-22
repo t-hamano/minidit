@@ -5,6 +5,7 @@ to the job summary, and to the file named by `MEASURE_REPORT` when set.
 """
 
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -44,14 +45,40 @@ def webview_processes(app: psutil.Process) -> list[psutil.Process]:
     return app.children(recursive=True)
 
 
+FOOTPRINT = re.compile(r"Footprint:\s+([\d.]+)\s*(KB|MB|GB)")
+UNITS = {"KB": 1 / 1024, "MB": 1, "GB": 1024}
+
+
+def footprint_mb(pids: list[int]) -> float:
+    """The physical footprint of macOS processes, which Activity Monitor
+    shows as their memory. psutil's USS walks every memory region, which
+    takes too long for WebKit processes."""
+    output = subprocess.run(
+        ["sudo", "footprint", *map(str, pids)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    ).stdout
+    matches = FOOTPRINT.findall(output)
+    if len(matches) != len(pids):
+        raise RuntimeError(f"Unexpected footprint output:\n{output}")
+    return sum(float(value) * UNITS[unit] for value, unit in matches)
+
+
 def memory_mb(app: psutil.Process) -> float:
-    """Memory that the app and its WebView processes use on their own (USS),
-    which is close to what Task Manager and Activity Monitor show."""
+    """Memory that the app and its WebView processes use on their own, as
+    Activity Monitor and Task Manager show it."""
+    processes = [app, *webview_processes(app)]
+    if sys.platform == "darwin":
+        return footprint_mb([process.pid for process in processes])
     total = 0
-    for process in [app, *webview_processes(app)]:
+    for process in processes:
         try:
             total += process.memory_full_info().uss
-        except psutil.Error:
+        except psutil.NoSuchProcess:
+            # Exited meanwhile. Any other error, such as `AccessDenied`,
+            # fails the measurement rather than understating it.
             pass
     return total / 1024 / 1024
 
@@ -68,8 +95,10 @@ def measure_once(index: int) -> tuple[float, float]:
                 raise TimeoutError("The app did not report that it was ready.")
             time.sleep(0.005)
         startup = time.perf_counter() - start
+        print(f"Run {index + 1}: ready in {startup * 1000:.0f} ms", flush=True)
         time.sleep(SETTLE_SECONDS)
         memory = memory_mb(psutil.Process(process.pid))
+        print(f"Run {index + 1}: {memory:.0f} MB", flush=True)
     finally:
         process.kill()
         process.wait()
@@ -83,6 +112,8 @@ def status(value: float, limit: float) -> str:
 
 
 def main() -> None:
+    # The Windows console encoding cannot print the status emoji.
+    sys.stdout.reconfigure(encoding="utf-8")
     results = [measure_once(index) for index in range(RUNS)]
     startup_ms = statistics.median(startup for startup, _ in results) * 1000
     memory = statistics.median(memory for _, memory in results)
