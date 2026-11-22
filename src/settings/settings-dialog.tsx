@@ -182,15 +182,6 @@ export function SettingsDialog( { open, onClose }: Props ) {
 				<Dialog.Content>
 					<Stack direction="column" gap="2xl">
 						<Section title="General">
-							<SwitchControl
-								label="Check for Updates at Startup"
-								checked={ settings.checkForUpdates }
-								onCheckedChange={ ( checkForUpdates ) =>
-									updateSettings( { checkForUpdates } )
-								}
-							/>
-						</Section>
-						<Section title="Appearance">
 							<Choice
 								label="Theme"
 								options={ THEME_OPTIONS }
@@ -199,6 +190,15 @@ export function SettingsDialog( { open, onClose }: Props ) {
 									updateSettings( { theme } )
 								}
 							/>
+							<SwitchControl
+								label="Check for Updates at Startup"
+								checked={ settings.checkForUpdates }
+								onCheckedChange={ ( checkForUpdates ) =>
+									updateSettings( { checkForUpdates } )
+								}
+							/>
+						</Section>
+						<Section title="Editor Settings">
 							<SearchableSelectControl
 								label="Font"
 								description="Lists the fonts installed on your computer."
