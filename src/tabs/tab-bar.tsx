@@ -8,7 +8,7 @@ import clsx from 'clsx';
  * WordPress dependencies
  */
 import { closeSmall, plus } from '@wordpress/icons';
-import { IconButton, Tooltip } from '@wordpress/ui';
+import { Button, IconButton, Tooltip } from '@wordpress/ui';
 
 /**
  * Internal dependencies
@@ -174,9 +174,11 @@ function TabItem( {
 			<Tooltip.Root disabled={ ! tab.path }>
 				<Tooltip.Trigger
 					render={
-						<button
-							type="button"
+						<Button
 							className="minidit-tab__button"
+							variant="minimal"
+							tone="neutral"
+							size="small"
 							role="tab"
 							aria-selected={ isActive }
 							tabIndex={ isActive ? 0 : -1 }
