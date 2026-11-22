@@ -22,7 +22,13 @@ export type EditorHandle = {
 	focus: () => void;
 	undo: () => void;
 	redo: () => void;
-	runSearchCommand: ( name: keyof typeof searchCommands ) => void;
+	/**
+	 * Runs a search command, after first showing `options` when given.
+	 */
+	runSearchCommand: (
+		name: keyof typeof searchCommands,
+		options?: SearchOptions
+	) => void;
 	getMatchInfo: () => MatchInfo;
 };
 
@@ -56,8 +62,11 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 				redo( viewRef.current );
 			}
 		},
-		runSearchCommand: ( name ) => {
+		runSearchCommand: ( name, options ) => {
 			if ( viewRef.current ) {
+				if ( options ) {
+					applySearch( viewRef.current, options );
+				}
 				searchCommands[ name ]( viewRef.current );
 			}
 		},

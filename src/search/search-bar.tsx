@@ -116,6 +116,10 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 			event: KeyboardEvent,
 			field: 'find' | 'replace'
 		) => {
+			// Keys that confirm an input method's text are not commands.
+			if ( event.nativeEvent.isComposing ) {
+				return;
+			}
 			if ( event.key === 'Escape' ) {
 				event.preventDefault();
 				onClose();
