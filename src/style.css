@@ -91,6 +91,15 @@ body {
 	outline-offset: calc(var(--wpds-border-width-focus) * -1);
 }
 
+/* Dim the inactive tabs, so the active one stands out. */
+.minidit-tab:not(.is-active) .minidit-tab__button {
+	color: var(--wpds-color-foreground-interactive-neutral-weak);
+}
+
+.minidit-tab:not(.is-active) .minidit-tab__button:hover {
+	color: var(--wpds-color-foreground-interactive-neutral-weak-active);
+}
+
 .minidit-tab.is-active .minidit-tab__button {
 	background: var(--wpds-color-background-surface-neutral);
 	box-shadow: 0 var(--wpds-border-width-xs) 0 var(--wpds-color-background-surface-neutral);

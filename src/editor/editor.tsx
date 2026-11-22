@@ -153,7 +153,11 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 			view.setState( tab.editorState );
 			applyViewSettings( view, viewSettingsRef.current );
 			applySearch( view, searchRef.current );
-			if ( ! searchRef.current ) {
+			// Keep focus on the tab bar while the keyboard switches tabs there.
+			const isTabFocused =
+				view.dom.ownerDocument.activeElement?.getAttribute( 'role' ) ===
+				'tab';
+			if ( ! searchRef.current && ! isTabFocused ) {
 				view.focus();
 			}
 		}
