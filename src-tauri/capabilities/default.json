@@ -9,10 +9,6 @@
 		"core:window:allow-destroy",
 		"dialog:allow-open",
 		"dialog:allow-save",
-		{
-			"identifier": "opener:allow-open-url",
-			"allow": [ { "url": "https://github.com/t-hamano/minidit*" } ]
-		},
 		"process:allow-restart",
 		"updater:default"
 	]

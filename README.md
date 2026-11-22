@@ -49,7 +49,7 @@ pnpm type-check    # Type check TypeScript
 
 The Release workflow needs these repository secrets:
 
-- `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: the key that signs updates, created with `pnpm tauri signer generate`. Its public key is in `src-tauri/tauri.conf.json`.
+- `TAURI_SIGNING_PRIVATE_KEY`: the key that signs updates, created with `pnpm tauri signer generate`. Its public key is in `src-tauri/tauri.conf.json`. Add `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` too if the key has a password.
 - `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`: for signing and notarizing the macOS app.
 
 ## License

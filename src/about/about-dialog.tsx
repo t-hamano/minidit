@@ -3,20 +3,17 @@
  */
 import { useEffect, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
-import { openUrl } from '@tauri-apps/plugin-opener';
 
 /**
  * WordPress dependencies
  */
-import { Button, Dialog, Link, Notice, Stack, Text } from '@wordpress/ui';
+import { Button, Dialog, Notice, Stack, Text } from '@wordpress/ui';
 
 /**
  * Internal dependencies
  */
 import appIcon from '../../src-tauri/icons/128x128@2x.png';
 import { checkForUpdate, type Update } from '../updater/updater';
-
-const REPOSITORY_URL = 'https://github.com/t-hamano/minidit';
 
 type Status =
 	| { kind: 'idle' }
@@ -85,18 +82,7 @@ export function AboutDialog( { open, onClose, onUpdateFound }: Props ) {
 								width={ 96 }
 								height={ 96 }
 							/>
-							<Text variant="heading-xl">Minidit</Text>
 							{ version && <Text>Version { version }</Text> }
-							<Text>Licensed under GPL-2.0-or-later</Text>
-							<Link
-								href={ REPOSITORY_URL }
-								onClick={ ( event ) => {
-									event.preventDefault();
-									openUrl( REPOSITORY_URL ).catch( () => {} );
-								} }
-							>
-								GitHub Repository
-							</Link>
 						</Stack>
 						<Stack direction="column" align="center">
 							<Button
