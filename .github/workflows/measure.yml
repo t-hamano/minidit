@@ -27,7 +27,12 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                platform: [macos-latest, windows-latest]
+                include:
+                    # Matches the targets that the release workflow builds.
+                    - platform: macos-latest
+                      args: '--target universal-apple-darwin'
+                    - platform: windows-latest
+                      args: ''
         runs-on: ${{ matrix.platform }}
         permissions:
             contents: read
@@ -51,6 +56,7 @@ jobs:
               uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
               with:
                   toolchain: stable
+                  targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
             - name: Rust cache
               uses: swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2.9.1
@@ -63,7 +69,7 @@ jobs:
 
             - name: Build the release bundle
               shell: bash
-              run: pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+              run: pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}' ${{ matrix.args }}
 
             - name: Measure
               shell: bash

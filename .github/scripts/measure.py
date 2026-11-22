@@ -24,11 +24,13 @@ MAX_STARTUP_MS = 500
 MAX_MEMORY_MB = 100
 MAX_INSTALLER_MB = 10
 
-BUNDLE = Path("src-tauri/target/release/bundle")
 if sys.platform == "darwin":
+    # The universal build that releases ship.
+    BUNDLE = Path("src-tauri/target/universal-apple-darwin/release/bundle")
     APP = BUNDLE / "macos/Minidit.app/Contents/MacOS/minidit"
     INSTALLERS = sorted(BUNDLE.glob("dmg/*.dmg"))
 else:
+    BUNDLE = Path("src-tauri/target/release/bundle")
     APP = Path("src-tauri/target/release/minidit.exe")
     INSTALLERS = sorted([*BUNDLE.glob("nsis/*.exe"), *BUNDLE.glob("msi/*.msi")])
 
