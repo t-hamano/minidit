@@ -1,13 +1,15 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
-use tauri::Manager;
+use tauri::{AppHandle, Manager, State};
 use text::{Encoding, LineEnding};
 
 mod files;
 mod fonts;
+mod open_files;
 mod settings;
 mod text;
+mod watcher;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,10 +42,16 @@ async fn run_blocking<T: Send + 'static, E: Send + 'static>(
 
 /// Reads a text file, detecting its encoding unless one is given.
 #[tauri::command]
-async fn read_text_file(path: PathBuf, encoding: Option<Encoding>) -> Result<OpenedFile, String> {
+async fn read_text_file(
+    app: AppHandle,
+    path: PathBuf,
+    encoding: Option<Encoding>,
+) -> Result<OpenedFile, String> {
     run_blocking(
         move || {
-            let bytes = files::read_bytes(&path)?;
+            let bytes = app
+                .state::<watcher::FileWatcher>()
+                .read(&path, || files::read_bytes(&path))?;
             let decoded = text::decode(&bytes, encoding);
             if decoded.text.contains('\0') {
                 return Err(format!(
@@ -66,6 +74,7 @@ async fn read_text_file(path: PathBuf, encoding: Option<Encoding>) -> Result<Ope
 /// Saves editor text with the given encoding and line ending.
 #[tauri::command]
 async fn write_text_file(
+    app: AppHandle,
     path: PathBuf,
     contents: String,
     encoding: Encoding,
@@ -75,7 +84,9 @@ async fn write_text_file(
         move || {
             let bytes = text::encode(&contents, encoding, line_ending)
                 .map_err(|_| SaveError::Unrepresentable)?;
-            files::write_atomic(&path, &bytes).map_err(SaveError::Io)
+            app.state::<watcher::FileWatcher>()
+                .save(&path, || files::write_atomic(&path, &bytes))
+                .map_err(SaveError::Io)
         },
         SaveError::Io,
     )
@@ -88,10 +99,32 @@ async fn list_fonts() -> Result<Vec<String>, String> {
     run_blocking(|| Ok(fonts::installed_families()), |error| error).await
 }
 
+/// Watches the open files for changes by other apps.
+#[tauri::command]
+fn watch_files(app: AppHandle, watcher: State<'_, watcher::FileWatcher>, paths: Vec<PathBuf>) {
+    watcher.watch(&app, paths);
+}
+
+/// Called once the window is ready to open files. Returns the files that
+/// were waiting, such as those named on the command line.
+#[tauri::command]
+fn take_pending_files(queue: State<'_, open_files::OpenQueue>) -> Vec<PathBuf> {
+    queue.take()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Registered first, so that a second launch exits before doing
+        // anything else.
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            let paths = open_files::paths_from_args(args, Path::new(&cwd));
+            app.state::<open_files::OpenQueue>().open(app, paths);
+            open_files::focus_window(app);
+        }))
         .plugin(tauri_plugin_dialog::init())
+        .manage(open_files::OpenQueue::default())
+        .manage(watcher::FileWatcher::default())
         .manage(settings::SettingsLock::default())
         .manage(settings::NormalBounds::default())
         .on_window_event(|window, event| {
@@ -106,6 +139,11 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            if let Ok(cwd) = std::env::current_dir() {
+                let paths = open_files::paths_from_args(std::env::args_os(), &cwd);
+                app.state::<open_files::OpenQueue>()
+                    .open(app.handle(), paths);
+            }
             if let Some(window) = app.get_webview_window("main") {
                 settings::restore_window_state(app.handle(), &window);
                 window.show()?;
@@ -116,10 +154,27 @@ pub fn run() {
             read_text_file,
             write_text_file,
             list_fonts,
+            watch_files,
+            take_pending_files,
             settings::read_settings,
             settings::write_settings,
             settings::save_window_state
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app, event| {
+            // Files opened from Finder, including the one that launched
+            // the app.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = event {
+                let paths = urls
+                    .into_iter()
+                    .filter_map(|url| url.to_file_path().ok())
+                    .collect();
+                app.state::<open_files::OpenQueue>().open(app, paths);
+                open_files::focus_window(app);
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
+        });
 }

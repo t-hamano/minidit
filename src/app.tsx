@@ -18,6 +18,7 @@ import { StatusBar } from './status-bar';
 import { tabsStore, useTabs } from './tabs/store';
 import { TabBar } from './tabs/tab-bar';
 import { useTabCommands } from './tabs/use-tab-commands';
+import { useOsFiles } from './files/use-os-files';
 import {
 	closeWindow,
 	useConfirmBeforeClose,
@@ -152,6 +153,7 @@ function Workspace() {
 	useTabSwitchShortcuts();
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
+	useOsFiles( commands );
 
 	return (
 		<main className="minidit-app" ref={ mainRef }>
