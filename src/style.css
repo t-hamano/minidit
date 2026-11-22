@@ -12,7 +12,11 @@ body {
 
 .minidit-app {
 	display: flex;
-	align-items: center;
-	justify-content: center;
+	flex-direction: column;
 	height: 100%;
+}
+
+.minidit-editor {
+	flex: 1;
+	min-height: 0;
 }

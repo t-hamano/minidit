@@ -38,7 +38,7 @@ updates:
                   - patch
       ignore:
           # @wordpress/* packages are pinned and updated manually after
-          # verifying the app (spec §2.2).
+          # verifying the app.
           - dependency-name: '@wordpress/*'
           # Tauri packages are updated by the tauri multi-ecosystem group.
           - dependency-name: '@tauri-apps/*'
