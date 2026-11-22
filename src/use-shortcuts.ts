@@ -13,7 +13,13 @@ const isMac = navigator.userAgent.includes( 'Mac' );
 
 type BrowserKeyHandlers = Pick<
 	MenuHandlers,
-	'find' | 'zoomIn' | 'zoomOut' | 'resetZoom'
+	| 'find'
+	| 'replace'
+	| 'findNext'
+	| 'findPrevious'
+	| 'zoomIn'
+	| 'zoomOut'
+	| 'resetZoom'
 >;
 
 /**
@@ -28,13 +34,25 @@ type BrowserKeyHandlers = Pick<
 function getBrowserKeyCommand(
 	event: KeyboardEvent
 ): keyof BrowserKeyHandlers | null {
-	if ( ! event.ctrlKey || event.altKey || event.metaKey ) {
+	if ( event.altKey || event.metaKey ) {
+		return null;
+	}
+	if ( event.key === 'F3' ) {
+		if ( event.ctrlKey ) {
+			return null;
+		}
+		return event.shiftKey ? 'findPrevious' : 'findNext';
+	}
+	if ( ! event.ctrlKey ) {
 		return null;
 	}
 	switch ( event.key ) {
 		case 'f':
 		case 'F':
 			return event.shiftKey ? null : 'find';
+		case 'h':
+		case 'H':
+			return event.shiftKey ? null : 'replace';
 		case '=':
 		case '+':
 			return 'zoomIn';
@@ -48,8 +66,9 @@ function getBrowserKeyCommand(
 }
 
 /**
- * Runs the menu commands for Ctrl+F and the zoom keys on Windows, where
- * WebView2 does not pass these keys on to the menu bar.
+ * Runs the menu commands for the search keys (Ctrl+F, Ctrl+H, F3 and
+ * Shift+F3) and the zoom keys on Windows, where WebView2 does not pass these
+ * keys on to the menu bar.
  *
  * @param handlers Commands the keys run.
  */
