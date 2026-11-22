@@ -259,6 +259,9 @@ function TabItem( {
 				variant="minimal"
 				tone="neutral"
 				size="small"
+				// Only the active tab's close button is in the tab order, like
+				// the tabs themselves.
+				tabIndex={ isActive ? undefined : -1 }
 				onMouseDown={ ( event ) => event.stopPropagation() }
 				onPointerDown={ ( event ) => event.stopPropagation() }
 				onClick={ onClose }
