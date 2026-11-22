@@ -47,7 +47,9 @@ def webview_processes(app: psutil.Process) -> list[psutil.Process]:
     return app.children(recursive=True)
 
 
-FOOTPRINT = re.compile(r"Footprint:\s+([\d.]+)\s*(KB|MB|GB)")
+# One line per process, such as `minidit [123]: 64-bit    Footprint: 27 MB`.
+# The `Summary Footprint` line has no process ID, so it is not matched.
+FOOTPRINT = re.compile(r"\[\d+\]:.*?Footprint:\s+([\d.]+)\s*(KB|MB|GB)")
 UNITS = {"KB": 1 / 1024, "MB": 1, "GB": 1024}
 
 
