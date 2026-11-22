@@ -1,0 +1,56 @@
+{
+	"name": "minidit",
+	"private": true,
+	"version": "0.1.0",
+	"description": "A lightweight text editor for note-taking on Windows and macOS",
+	"author": "Aki Hamano",
+	"license": "GPL-2.0-or-later",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/t-hamano/minidit.git"
+	},
+	"bugs": {
+		"url": "https://github.com/t-hamano/minidit/issues"
+	},
+	"type": "module",
+	"packageManager": "pnpm@10.28.0",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"tauri": "tauri",
+		"lint:js": "eslint .",
+		"lint:js:fix": "eslint . --fix",
+		"lint:css": "stylelint \"src/**/*.{css,scss}\"",
+		"lint:css:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
+		"lint": "pnpm lint:js && pnpm lint:css",
+		"lint:fix": "pnpm lint:js:fix && pnpm lint:css:fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"type-check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@tauri-apps/api": "^2.12.5",
+		"@wordpress/icons": "21.0.0",
+		"@wordpress/theme": "5.0.0",
+		"@wordpress/ui": "0.27.0",
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1"
+	},
+	"devDependencies": {
+		"@tauri-apps/cli": "^2.12.6",
+		"@types/node": "^26.6.6",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"@vitejs/plugin-react": "^6.3.0",
+		"@wordpress/eslint-plugin": "^28.2.0",
+		"@wordpress/prettier-config": "^5.2.0",
+		"@wordpress/stylelint-config": "^27.2.0",
+		"eslint": "^10.15.0",
+		"prettier": "npm:wp-prettier@3.9.6",
+		"stylelint": "^17.16.0",
+		"stylelint-scss": "^7.5.0",
+		"typescript": "~6.0.3",
+		"vite": "^8.3.8"
+	}
+}

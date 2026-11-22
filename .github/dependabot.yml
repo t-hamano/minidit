@@ -1,0 +1,70 @@
+version: 2
+
+multi-ecosystem-groups:
+    # Tauri requires the Rust crates and npm packages to share the same
+    # major/minor version, so update both ecosystems in a single PR.
+    tauri:
+        schedule:
+            interval: weekly
+        commit-message:
+            prefix: build
+            include: scope
+
+updates:
+    - package-ecosystem: cargo
+      directory: /src-tauri
+      target-branch: main
+      schedule:
+          interval: weekly
+      groups:
+          cargo-minor-patch:
+              update-types:
+                  - minor
+                  - patch
+      ignore:
+          # Tauri crates are updated by the tauri multi-ecosystem group.
+          - dependency-name: 'tauri'
+          - dependency-name: 'tauri-*'
+
+    - package-ecosystem: npm
+      directory: /
+      target-branch: main
+      schedule:
+          interval: weekly
+      groups:
+          npm-minor-patch:
+              update-types:
+                  - minor
+                  - patch
+      ignore:
+          # @wordpress/* packages are pinned and updated manually after
+          # verifying the app (spec §2.2).
+          - dependency-name: '@wordpress/*'
+          # Tauri packages are updated by the tauri multi-ecosystem group.
+          - dependency-name: '@tauri-apps/*'
+
+    - package-ecosystem: cargo
+      directory: /src-tauri
+      multi-ecosystem-group: tauri
+      patterns:
+          - 'tauri'
+          - 'tauri-*'
+      allow:
+          - dependency-name: 'tauri'
+          - dependency-name: 'tauri-*'
+    - package-ecosystem: npm
+      directory: /
+      multi-ecosystem-group: tauri
+      patterns:
+          - '@tauri-apps/*'
+      allow:
+          - dependency-name: '@tauri-apps/*'
+
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: weekly
+      groups:
+          actions:
+              patterns:
+                  - '*'
