@@ -18,6 +18,8 @@ import {
 import {
 	arrowDown,
 	arrowUp,
+	chevronDown,
+	chevronRight,
 	closeSmall,
 	formatCapitalize,
 	replace,
@@ -45,6 +47,9 @@ export type SearchBarHandle = {
 type Props = {
 	options: SearchOptions;
 	onChange: ( options: SearchOptions ) => void;
+	/** Whether the Replace field is shown. */
+	replaceOpen: boolean;
+	onToggleReplace: () => void;
 	onClose: () => void;
 	editorRef: RefObject< EditorHandle | null >;
 };
@@ -62,7 +67,7 @@ function formatCount( { current, total, capped }: MatchInfo ) {
  */
 export const SearchBar = forwardRef< SearchBarHandle, Props >(
 	function MiniditSearchBar(
-		{ options, onChange, onClose, editorRef },
+		{ options, onChange, replaceOpen, onToggleReplace, onClose, editorRef },
 		ref
 	) {
 		const findRef = useRef< HTMLInputElement >( null );
@@ -108,6 +113,38 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 			);
 		}, [ isInvalid ] );
 
+		// Escape closes the bar from the bar or the editor. It is caught
+		// before the editor sees it, which would otherwise only deselect
+		// the match.
+		const onCloseRef = useRef( onClose );
+		onCloseRef.current = onClose;
+		useEffect( () => {
+			const ownerDocument = findRef.current?.ownerDocument;
+			if ( ! ownerDocument ) {
+				return;
+			}
+			const onEscape = ( event: globalThis.KeyboardEvent ) => {
+				if (
+					event.key !== 'Escape' ||
+					event.isComposing ||
+					! (
+						event.target instanceof Element &&
+						event.target.closest(
+							'.minidit-search-bar, .cm-editor'
+						)
+					)
+				) {
+					return;
+				}
+				event.preventDefault();
+				event.stopPropagation();
+				onCloseRef.current();
+			};
+			ownerDocument.addEventListener( 'keydown', onEscape, true );
+			return () =>
+				ownerDocument.removeEventListener( 'keydown', onEscape, true );
+		}, [] );
+
 		const run = (
 			name: Parameters< EditorHandle[ 'runSearchCommand' ] >[ 0 ]
 		) => editorRef.current?.runSearchCommand( name );
@@ -120,10 +157,7 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 			if ( event.nativeEvent.isComposing ) {
 				return;
 			}
-			if ( event.key === 'Escape' ) {
-				event.preventDefault();
-				onClose();
-			} else if ( event.key === 'Enter' ) {
+			if ( event.key === 'Enter' ) {
 				event.preventDefault();
 				if ( field === 'replace' ) {
 					run( 'replaceNext' );
@@ -172,6 +206,15 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 				role="search"
 				aria-label="Find and replace"
 			>
+				<IconButton
+					label="Toggle Replace"
+					icon={ replaceOpen ? chevronDown : chevronRight }
+					variant="minimal"
+					tone="neutral"
+					size="compact"
+					aria-expanded={ replaceOpen }
+					onClick={ onToggleReplace }
+				/>
 				<div className="minidit-search-bar__row">
 					<Input
 						ref={ findRef }
@@ -215,26 +258,34 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 						/>
 					</div>
 				</div>
-				<div className="minidit-search-bar__row">
-					<Input
-						ref={ replaceRef }
-						size="compact"
-						placeholder="Replace"
-						aria-label="Replace"
-						value={ options.replace }
-						onChange={ ( event ) =>
-							onChange( {
-								...options,
-								replace: event.target.value,
-							} )
-						}
-						onKeyDown={ ( event ) => onKeyDown( event, 'replace' ) }
-					/>
-					<div className="minidit-search-bar__actions">
-						{ action( 'Replace', replace, 'replaceNext' ) }
-						{ action( 'Replace All', replaceAll, 'replaceAll' ) }
+				{ replaceOpen && (
+					<div className="minidit-search-bar__row">
+						<Input
+							ref={ replaceRef }
+							size="compact"
+							placeholder="Replace"
+							aria-label="Replace"
+							value={ options.replace }
+							onChange={ ( event ) =>
+								onChange( {
+									...options,
+									replace: event.target.value,
+								} )
+							}
+							onKeyDown={ ( event ) =>
+								onKeyDown( event, 'replace' )
+							}
+						/>
+						<div className="minidit-search-bar__actions">
+							{ action( 'Replace', replace, 'replaceNext' ) }
+							{ action(
+								'Replace All',
+								replaceAll,
+								'replaceAll'
+							) }
+						</div>
 					</div>
-				</div>
+				) }
 			</div>
 		);
 	}

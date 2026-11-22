@@ -62,6 +62,8 @@ function Workspace() {
 
 	const searchBarRef = useRef< SearchBarHandle >( null );
 	const [ searchOpen, setSearchOpen ] = useState( false );
+	// Find opens the bar with only its Find field, as in VS Code.
+	const [ replaceOpen, setReplaceOpen ] = useState( false );
 	const [ searchOptions, setSearchOptions ] =
 		useState< SearchOptions >( DEFAULT_SEARCH );
 	const searchOptionsRef = useRef( searchOptions );
@@ -79,10 +81,14 @@ function Workspace() {
 
 	const openSearch = useCallback( ( field: 'find' | 'replace' ) => {
 		setSearchOpen( true );
+		if ( field === 'replace' ) {
+			setReplaceOpen( true );
+		}
 		setFocusRequest( { field } );
 	}, [] );
 	const closeSearch = useCallback( () => {
 		setSearchOpen( false );
+		setReplaceOpen( false );
 		focusEditor();
 	}, [ focusEditor ] );
 	const findAgain = useCallback(
@@ -175,6 +181,10 @@ function Workspace() {
 					ref={ searchBarRef }
 					options={ searchOptions }
 					onChange={ setSearchOptions }
+					replaceOpen={ replaceOpen }
+					onToggleReplace={ () =>
+						setReplaceOpen( ( open ) => ! open )
+					}
 					onClose={ closeSearch }
 					editorRef={ editorRef }
 				/>
