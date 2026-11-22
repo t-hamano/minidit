@@ -53,6 +53,7 @@ const THEME_OPTIONS: Option< Settings[ 'theme' ] >[] = [
 
 type ChoiceProps< T > = {
 	label: string;
+	description?: string;
 	options: Option< T >[];
 	value: T;
 	onChange: ( value: T ) => void;
@@ -61,13 +62,20 @@ type ChoiceProps< T > = {
 /**
  * A select field for one of a few fixed values.
  *
- * @param props          Field properties.
- * @param props.label    The field label.
- * @param props.options  The choices.
- * @param props.value    The chosen value.
- * @param props.onChange Called with the newly chosen value.
+ * @param props             Field properties.
+ * @param props.label       The field label.
+ * @param props.description Optional text shown under the field.
+ * @param props.options     The choices.
+ * @param props.value       The chosen value.
+ * @param props.onChange    Called with the newly chosen value.
  */
-function Choice< T >( { label, options, value, onChange }: ChoiceProps< T > ) {
+function Choice< T >( {
+	label,
+	description,
+	options,
+	value,
+	onChange,
+}: ChoiceProps< T > ) {
 	const items: SelectItem[] = options.map( ( option ) => ( {
 		value: String( option.value ),
 		label: option.label,
@@ -75,6 +83,7 @@ function Choice< T >( { label, options, value, onChange }: ChoiceProps< T > ) {
 	return (
 		<SelectControl
 			label={ label }
+			description={ description }
 			items={ items }
 			value={ items.find( ( item ) => item.value === String( value ) ) }
 			isItemEqualToValue={ ( item, selected ) =>
@@ -184,6 +193,7 @@ export function SettingsDialog( { open, onClose }: Props ) {
 						<Section title="Appearance">
 							<SearchableSelectControl
 								label="Font"
+								description="Lists the fonts installed on your computer."
 								items={ fontItems }
 								value={
 									fontItems.find(
@@ -202,6 +212,7 @@ export function SettingsDialog( { open, onClose }: Props ) {
 							/>
 							<InputControl
 								label="Font Size"
+								description="Size in pixels."
 								type="number"
 								min={ MIN_FONT_SIZE }
 								max={ MAX_FONT_SIZE }
@@ -223,6 +234,7 @@ export function SettingsDialog( { open, onClose }: Props ) {
 							/>
 							<Choice
 								label="Tab Width"
+								description="Width of tab characters and of each indentation level. Opened files indented with spaces use their own width instead."
 								options={ TAB_WIDTH_OPTIONS }
 								value={ settings.tabWidth }
 								onChange={ ( tabWidth ) =>
