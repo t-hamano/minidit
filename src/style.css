@@ -82,19 +82,26 @@ body {
 }
 
 .minidit-tab__button {
-	padding-inline-end: calc(var(--wpds-dimension-size-sm) + var(--wpds-dimension-padding-xs));
+	padding-inline-end: calc(var(--wpds-dimension-size-xs) + var(--wpds-dimension-padding-xs));
 }
 
-/* Draw the focus ring inside, so the scrolling tab list does not clip it. */
-.minidit-tab__button:focus {
+/* Draw focus rings inside, so the scrolling tab list does not clip them. */
+.minidit-tab :focus {
 	outline-offset: calc(var(--wpds-border-width-focus) * -1);
 }
 
 .minidit-tab__close {
+	--wp-ui-button-height: var(--wpds-dimension-size-xs);
+
 	position: absolute;
 	top: 50%;
 	right: var(--wpds-dimension-padding-xs);
 	transform: translateY(-50%);
+}
+
+.minidit-tab__close svg {
+	width: var(--wpds-dimension-size-2xs);
+	height: var(--wpds-dimension-size-2xs);
 }
 
 .minidit-tab__title {
