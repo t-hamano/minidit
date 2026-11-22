@@ -37,6 +37,7 @@
 	},
 	"bundle": {
 		"active": true,
+		"createUpdaterArtifacts": true,
 		"targets": "all",
 		"icon": [
 			"icons/32x32.png",
@@ -65,6 +66,14 @@
 		],
 		"macOS": {
 			"minimumSystemVersion": "13.0"
+		}
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdBMkU3RTA2QUMzMjU3QjAKUldTd1Z6S3NCbjR1ZWpTRG9xdnVtNnl6U1lnQ2lhQ0QzWm4zRHF6M2wwa1Z0aTdPZEQwaUxocFUK",
+			"endpoints": [
+				"https://github.com/t-hamano/minidit/releases/latest/download/latest.json"
+			]
 		}
 	}
 }

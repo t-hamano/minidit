@@ -31,6 +31,7 @@ export type MenuHandlers = {
 	findNext: () => void;
 	findPrevious: () => void;
 	openSettings: () => void;
+	openAbout: () => void;
 	setTheme: ( theme: ThemePreference ) => void;
 	toggleLineNumbers: () => void;
 	toggleWhitespace: () => void;
@@ -108,7 +109,7 @@ async function createAppMenu(
 	const settings = item( 'Settings…', 'CmdOrCtrl+,', () =>
 		run( 'openSettings' )
 	);
-	const about = item( 'About Minidit', undefined );
+	const about = item( 'About Minidit', undefined, () => run( 'openAbout' ) );
 
 	const appSubmenu = isMac
 		? [

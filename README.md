@@ -9,6 +9,19 @@ Minidit keeps the simplicity of Windows Notepad while adding a few conveniences 
 > [!NOTE]
 > Minidit is under early development and is not ready for use yet.
 
+## Installation
+
+Download the installer for your OS from the [Releases page](https://github.com/t-hamano/minidit/releases).
+
+- **macOS**: Open the `.dmg` file and drag Minidit to the Applications folder. The app is signed and notarized by Apple.
+- **Windows**: Run the `-setup.exe` installer.
+
+Minidit checks for updates at startup and offers to install them. You can turn this off in the settings, and check manually from About Minidit.
+
+### Windows SmartScreen warning
+
+The Windows installer is not code signed, so Microsoft Defender SmartScreen may show "Windows protected your PC" when you run it. To continue, click **More info**, then **Run anyway**. Only do this for installers downloaded from the Releases page of this repository.
+
 ## Development
 
 ### Requirements
