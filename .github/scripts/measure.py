@@ -1,10 +1,11 @@
 """Measures the release build's startup time, memory usage, and installer size.
 
 Run from the repository root after `pnpm tauri build`. Writes a Markdown report
-to the job summary when run in GitHub Actions.
+to the job summary, and to the file named by `MEASURE_REPORT` when set.
 """
 
 import os
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -16,6 +17,11 @@ import psutil
 RUNS = 5
 STARTUP_TIMEOUT = 30
 SETTLE_SECONDS = 3
+
+# The targets from the specification.
+MAX_STARTUP_MS = 500
+MAX_MEMORY_MB = 100
+MAX_INSTALLER_MB = 10
 
 BUNDLE = Path("src-tauri/target/release/bundle")
 if sys.platform == "darwin":
@@ -72,32 +78,51 @@ def measure_once(index: int) -> tuple[float, float]:
     return startup, memory
 
 
+def status(value: float, limit: float) -> str:
+    return "✅" if value <= limit else "⚠️"
+
+
 def main() -> None:
     results = [measure_once(index) for index in range(RUNS)]
+    startup_ms = statistics.median(startup for startup, _ in results) * 1000
+    memory = statistics.median(memory for _, memory in results)
+    installers = [
+        (path.name, path.stat().st_size / 1024 / 1024) for path in INSTALLERS
+    ]
+    platform = "macOS" if sys.platform == "darwin" else "Windows"
     lines = [
-        f"## {sys.platform}",
+        f"### {platform}",
+        "",
+        "| | Result | Target |",
+        "| --- | --- | --- |",
+        f"| Startup (median of {RUNS}) | {status(startup_ms, MAX_STARTUP_MS)} {startup_ms:.0f} ms | {MAX_STARTUP_MS} ms |",
+        f"| Memory (median of {RUNS}) | {status(memory, MAX_MEMORY_MB)} {memory:.0f} MB | {MAX_MEMORY_MB} MB |",
+        *(
+            f"| `{name}` | {status(size, MAX_INSTALLER_MB)} {size:.1f} MB | {MAX_INSTALLER_MB} MB |"
+            for name, size in installers
+        ),
+        "",
+        "<details><summary>Each run</summary>",
         "",
         "| Run | Startup | Memory |",
         "| --- | --- | --- |",
         *(
-            f"| {index + 1} | {startup * 1000:.0f} ms | {memory:.0f} MB |"
-            for index, (startup, memory) in enumerate(results)
+            f"| {index + 1} | {startup * 1000:.0f} ms | {run_memory:.0f} MB |"
+            for index, (startup, run_memory) in enumerate(results)
         ),
         "",
-        "| Installer | Size |",
-        "| --- | --- |",
-        *(
-            f"| {path.name} | {path.stat().st_size / 1024 / 1024:.1f} MB |"
-            for path in INSTALLERS
-        ),
+        "</details>",
         "",
     ]
     report = "\n".join(lines)
     print(report)
-    summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary:
-        with open(summary, "a", encoding="utf-8") as file:
-            file.write(report)
+    for target in (
+        os.environ.get("GITHUB_STEP_SUMMARY"),
+        os.environ.get("MEASURE_REPORT"),
+    ):
+        if target:
+            with open(target, "a", encoding="utf-8") as file:
+                file.write(report)
 
 
 if __name__ == "__main__":
