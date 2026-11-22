@@ -1,0 +1,4 @@
+{
+	"extends": "@wordpress/stylelint-config/scss-stylistic",
+	"ignoreFiles": [ "dist/**", "src-tauri/**", "node_modules/**" ]
+}
