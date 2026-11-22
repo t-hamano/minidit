@@ -41,17 +41,6 @@ pnpm format        # Format files with Prettier
 pnpm type-check    # Type check TypeScript
 ```
 
-### Releasing
-
-1. Update the version in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`, and merge the change.
-2. Push a tag such as `v0.1.0` for that version. The Release workflow builds the installers and creates a draft release.
-3. Publish the draft release. Installed apps find the update once it is published.
-
-The Release workflow needs these repository secrets:
-
-- `TAURI_SIGNING_PRIVATE_KEY`: the key that signs updates, created with `pnpm tauri signer generate`. Its public key is in `src-tauri/tauri.conf.json`. Add `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` too if the key has a password.
-- `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`: for signing and notarizing the macOS app.
-
 ## License
 
 [GPL-2.0-or-later](LICENSE)

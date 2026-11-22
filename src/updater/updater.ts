@@ -22,12 +22,11 @@ export function checkForUpdate(): Promise< Update | null > {
 }
 
 /**
- * Downloads and installs an update, then restarts the app.
+ * Installs a downloaded update, then restarts the app.
  *
- * @param update The update to install.
+ * @param update The update, after `update.download()`.
  */
 export async function installUpdate( update: Update ) {
-	await update.download();
 	// The Windows installer quits the app, so save the settings first.
 	await flushSettings();
 	await saveWindowState().catch( () => {} );

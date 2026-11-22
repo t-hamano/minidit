@@ -31,10 +31,17 @@ export function useUpdater(
 				confirmLabel: 'Install and Restart',
 				cancelLabel: 'Later',
 			} );
-			if ( ! install || ! ( await confirmQuit() ) ) {
+			if ( ! install ) {
 				return;
 			}
 			try {
+				await update.download();
+				// Asked after downloading, since the editor stays usable
+				// meanwhile.
+				if ( ! ( await confirmQuit() ) ) {
+					await update.close();
+					return;
+				}
 				await installUpdate( update );
 			} catch ( error ) {
 				await showError(
