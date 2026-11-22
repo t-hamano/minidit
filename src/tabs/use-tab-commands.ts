@@ -118,7 +118,8 @@ export function useTabCommands( onDone: () => void ): TabCommands {
 			if ( ! tab ) {
 				return false;
 			}
-			const contents = tab.editorState.doc.toString();
+			const { doc } = tab.editorState;
+			const contents = doc.toString();
 			try {
 				await writeTextFile( path, contents, {
 					encoding,
@@ -149,7 +150,9 @@ export function useTabCommands( onDone: () => void ): TabCommands {
 				);
 				return false;
 			}
-			tabsStore.update( id, { path, encoding, isDirty: false } );
+			// Text typed while saving was not saved, so the tab stays dirty.
+			const isDirty = tabsStore.getTab( id )?.editorState.doc !== doc;
+			tabsStore.update( id, { path, encoding, isDirty } );
 			return true;
 		},
 		[ dialogs ]

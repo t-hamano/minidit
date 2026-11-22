@@ -118,15 +118,12 @@ export function getMatchInfo( view: EditorView ): MatchInfo {
 }
 
 /**
- * Whether a regular expression is valid in JavaScript syntax.
+ * Whether a regular expression is valid. Checked the same way CodeMirror
+ * runs the search, which uses the `u` flag, so patterns such as `\-` are
+ * invalid.
  *
  * @param source The expression.
  */
 export function isValidRegExp( source: string ) {
-	try {
-		new RegExp( source );
-		return true;
-	} catch {
-		return false;
-	}
+	return new SearchQuery( { search: source, regexp: true } ).valid;
 }
