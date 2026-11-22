@@ -191,6 +191,14 @@ export function SettingsDialog( { open, onClose }: Props ) {
 							/>
 						</Section>
 						<Section title="Appearance">
+							<Choice
+								label="Theme"
+								options={ THEME_OPTIONS }
+								value={ settings.theme }
+								onChange={ ( theme ) =>
+									updateSettings( { theme } )
+								}
+							/>
 							<SearchableSelectControl
 								label="Font"
 								description="Lists the fonts installed on your computer."
@@ -247,14 +255,6 @@ export function SettingsDialog( { open, onClose }: Props ) {
 								value={ settings.indentType }
 								onChange={ ( indentType ) =>
 									updateSettings( { indentType } )
-								}
-							/>
-							<Choice
-								label="Theme"
-								options={ THEME_OPTIONS }
-								value={ settings.theme }
-								onChange={ ( theme ) =>
-									updateSettings( { theme } )
 								}
 							/>
 							<SwitchControl
