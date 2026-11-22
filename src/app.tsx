@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 /**
@@ -9,7 +9,9 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
  */
 import { DialogProvider } from './dialogs/dialog-provider';
 import { Editor, type EditorHandle } from './editor/editor';
+import type { SearchOptions } from './editor/search';
 import { useAppMenu, type MenuHandlers } from './menu/app-menu';
+import { SearchBar, type SearchBarHandle } from './search/search-bar';
 import { StatusBar } from './status-bar';
 import { tabsStore, useTabs } from './tabs/store';
 import { TabBar } from './tabs/tab-bar';
@@ -18,6 +20,27 @@ import { useConfirmBeforeClose, useWindowTitle } from './tabs/use-window';
 import { AppThemeProvider } from './theme/app-theme-provider';
 import type { ThemePreference } from './theme/use-color-scheme';
 import { useTabSwitchShortcuts } from './use-shortcuts';
+
+const DEFAULT_SEARCH: SearchOptions = {
+	search: '',
+	replace: '',
+	caseSensitive: false,
+	regexp: false,
+};
+
+/**
+ * Whether a text field outside the editor, such as in the search bar, has
+ * focus. Undo and Redo then apply to that field.
+ *
+ * @param ownerDocument The app's document.
+ */
+function isTextFieldFocused( ownerDocument: Document ) {
+	const element = ownerDocument.activeElement;
+	return (
+		element instanceof HTMLInputElement ||
+		element instanceof HTMLTextAreaElement
+	);
+}
 
 type WorkspaceProps = {
 	theme: ThemePreference;
@@ -31,6 +54,56 @@ function Workspace( { theme, setTheme }: WorkspaceProps ) {
 	useTabs();
 	const activeTab = tabsStore.getActiveTab();
 
+	const searchBarRef = useRef< SearchBarHandle >( null );
+	const [ searchOpen, setSearchOpen ] = useState( false );
+	const [ searchOptions, setSearchOptions ] =
+		useState< SearchOptions >( DEFAULT_SEARCH );
+	const searchOptionsRef = useRef( searchOptions );
+	searchOptionsRef.current = searchOptions;
+
+	// Focused after rendering, since the bar may not be mounted yet.
+	const [ focusRequest, setFocusRequest ] = useState< {
+		field: 'find' | 'replace';
+	} | null >( null );
+	useEffect( () => {
+		if ( focusRequest ) {
+			searchBarRef.current?.focus( focusRequest.field );
+		}
+	}, [ focusRequest ] );
+
+	const openSearch = useCallback( ( field: 'find' | 'replace' ) => {
+		setSearchOpen( true );
+		setFocusRequest( { field } );
+	}, [] );
+	const closeSearch = useCallback( () => {
+		setSearchOpen( false );
+		focusEditor();
+	}, [ focusEditor ] );
+	const findAgain = useCallback(
+		( command: 'findNext' | 'findPrevious' ) => {
+			if ( searchOptionsRef.current.search ) {
+				setSearchOpen( true );
+				editorRef.current?.runSearchCommand(
+					command,
+					searchOptionsRef.current
+				);
+			} else {
+				openSearch( 'find' );
+			}
+		},
+		[ openSearch ]
+	);
+
+	const mainRef = useRef< HTMLElement >( null );
+	const undoOrRedo = useCallback( ( command: 'undo' | 'redo' ) => {
+		const ownerDocument = mainRef.current?.ownerDocument;
+		if ( ownerDocument && isTextFieldFocused( ownerDocument ) ) {
+			ownerDocument.execCommand( command );
+		} else {
+			editorRef.current?.[ command ]();
+		}
+	}, [] );
+
 	const menuHandlers = useMemo< MenuHandlers >(
 		() => ( {
 			newTab: commands.newTab,
@@ -43,11 +116,15 @@ function Workspace( { theme, setTheme }: WorkspaceProps ) {
 					await getCurrentWindow().destroy();
 				}
 			},
-			undo: () => editorRef.current?.undo(),
-			redo: () => editorRef.current?.redo(),
+			undo: () => undoOrRedo( 'undo' ),
+			redo: () => undoOrRedo( 'redo' ),
+			find: () => openSearch( 'find' ),
+			replace: () => openSearch( 'replace' ),
+			findNext: () => findAgain( 'findNext' ),
+			findPrevious: () => findAgain( 'findPrevious' ),
 			setTheme,
 		} ),
-		[ commands, setTheme ]
+		[ commands, setTheme, openSearch, findAgain, undoOrRedo ]
 	);
 
 	useAppMenu( menuHandlers, theme );
@@ -56,13 +133,26 @@ function Workspace( { theme, setTheme }: WorkspaceProps ) {
 	useConfirmBeforeClose( commands.confirmQuit );
 
 	return (
-		<main className="minidit-app">
+		<main className="minidit-app" ref={ mainRef }>
 			<TabBar
 				onNewTab={ commands.newTab }
 				onCloseTab={ commands.closeTab }
 				onFocusEditor={ focusEditor }
 			/>
-			<Editor ref={ editorRef } tab={ activeTab } />
+			{ searchOpen && (
+				<SearchBar
+					ref={ searchBarRef }
+					options={ searchOptions }
+					onChange={ setSearchOptions }
+					onClose={ closeSearch }
+					editorRef={ editorRef }
+				/>
+			) }
+			<Editor
+				ref={ editorRef }
+				tab={ activeTab }
+				search={ searchOpen ? searchOptions : null }
+			/>
 			<StatusBar tab={ activeTab } commands={ commands } />
 		</main>
 	);

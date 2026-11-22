@@ -13,7 +13,16 @@ import { EditorView, keymap } from '@codemirror/view';
 /**
  * Internal dependencies
  */
+import { searchExtension } from './search';
 import { editorTheme } from './theme';
+
+type UpdateListener = ( view: EditorView ) => void;
+
+/**
+ * Listeners called after every editor update in any tab, e.g. to refresh
+ * the search match count.
+ */
+export const editorUpdateListeners = new Set< UpdateListener >();
 
 /**
  * Creates the editor state for one tab. Each tab has its own state, so
@@ -42,8 +51,12 @@ export function createEditorState(
 				autocorrect: 'off',
 				autocapitalize: 'off',
 			} ),
+			searchExtension,
 			EditorView.updateListener.of( ( update ) => {
 				onUpdate( update.state, update.docChanged );
+				editorUpdateListeners.forEach( ( listener ) =>
+					listener( update.view )
+				);
 			} ),
 			editorTheme,
 		],

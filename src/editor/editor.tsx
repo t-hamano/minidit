@@ -10,16 +10,33 @@ import { EditorView } from '@codemirror/view';
  */
 import { showEditorContextMenu } from '../menu/app-menu';
 import type { Tab } from '../tabs/store';
+import {
+	applySearch,
+	getMatchInfo,
+	searchCommands,
+	type MatchInfo,
+	type SearchOptions,
+} from './search';
 
 export type EditorHandle = {
 	focus: () => void;
 	undo: () => void;
 	redo: () => void;
+	/**
+	 * Runs a search command, after first showing `options` when given.
+	 */
+	runSearchCommand: (
+		name: keyof typeof searchCommands,
+		options?: SearchOptions
+	) => void;
+	getMatchInfo: () => MatchInfo;
 };
 
 type Props = {
 	/** The active tab, whose contents the editor shows. */
 	tab: Tab;
+	/** The search bar's options while it is open, otherwise `null`. */
+	search: SearchOptions | null;
 };
 
 /**
@@ -27,7 +44,7 @@ type Props = {
  * by all tabs; switching tabs swaps in the tab's own editor state.
  */
 export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
-	{ tab },
+	{ tab, search },
 	ref
 ) {
 	const containerRef = useRef< HTMLDivElement >( null );
@@ -45,6 +62,18 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 				redo( viewRef.current );
 			}
 		},
+		runSearchCommand: ( name, options ) => {
+			if ( viewRef.current ) {
+				if ( options ) {
+					applySearch( viewRef.current, options );
+				}
+				searchCommands[ name ]( viewRef.current );
+			}
+		},
+		getMatchInfo: () =>
+			viewRef.current
+				? getMatchInfo( viewRef.current )
+				: { current: 0, total: 0, capped: false },
 	};
 	useImperativeHandle( ref, () => handle );
 
@@ -59,14 +88,26 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 
 	// A tab's `editorState` follows every update, so it only needs to be
 	// swapped in when another tab becomes active.
+	const searchRef = useRef( search );
+	searchRef.current = search;
+
 	useEffect( () => {
 		const view = viewRef.current;
 		if ( view ) {
 			view.setState( tab.editorState );
-			view.focus();
+			applySearch( view, searchRef.current );
+			if ( ! searchRef.current ) {
+				view.focus();
+			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ tab.id ] );
+
+	useEffect( () => {
+		if ( viewRef.current ) {
+			applySearch( viewRef.current, search );
+		}
+	}, [ search ] );
 
 	return (
 		<div
