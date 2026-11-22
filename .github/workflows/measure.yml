@@ -1,0 +1,65 @@
+name: Measure
+
+# Measures the release build's startup time, memory usage, and installer size.
+on:
+    workflow_dispatch:
+    pull_request:
+        paths:
+            - '.github/workflows/measure.yml'
+            - '.github/scripts/measure.py'
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    measure:
+        name: Measure (${{ matrix.platform }})
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [macos-latest, windows-latest]
+        runs-on: ${{ matrix.platform }}
+        permissions:
+            contents: read
+        timeout-minutes: 45
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+            - name: Setup Node.js
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: .nvmrc
+                  cache: pnpm
+
+            - name: Install Rust toolchain
+              uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+              with:
+                  toolchain: stable
+
+            - name: Rust cache
+              uses: swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2.9.1
+              with:
+                  workspaces: ./src-tauri -> target
+                  key: measure-${{ matrix.platform }}
+
+            - name: Install frontend dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build the release bundle
+              shell: bash
+              run: pnpm tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+            - name: Measure
+              shell: bash
+              run: |
+                  python -m pip install --quiet psutil
+                  python .github/scripts/measure.py

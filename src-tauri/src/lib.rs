@@ -112,6 +112,15 @@ fn take_pending_files(queue: State<'_, open_files::OpenQueue>) -> Vec<PathBuf> {
     queue.take()
 }
 
+/// Called once the window takes text input. When `MINIDIT_READY_FILE` is
+/// set, creates that file, so that a script can measure the startup time.
+#[tauri::command]
+fn report_ready() {
+    if let Some(path) = std::env::var_os("MINIDIT_READY_FILE") {
+        let _ = std::fs::write(path, "");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -158,6 +167,7 @@ pub fn run() {
             list_fonts,
             watch_files,
             take_pending_files,
+            report_ready,
             settings::read_settings,
             settings::write_settings,
             settings::save_window_state

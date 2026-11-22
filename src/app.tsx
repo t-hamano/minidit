@@ -2,6 +2,7 @@
  * External dependencies
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Internal dependencies
@@ -158,6 +159,12 @@ function Workspace() {
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
 	useOsFiles( commands );
+	useEffect( () => {
+		// After the first paint, when the editor takes text input.
+		requestAnimationFrame( () => {
+			invoke( 'report_ready' ).catch( () => {} );
+		} );
+	}, [] );
 	const offerUpdate = useUpdater(
 		settings.checkForUpdates,
 		commands.confirmQuit
