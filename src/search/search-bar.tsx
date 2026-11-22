@@ -207,7 +207,8 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 		const action = (
 			label: string,
 			icon: ComponentProps< typeof IconButton >[ 'icon' ],
-			command: Parameters< EditorHandle[ 'runSearchCommand' ] >[ 0 ]
+			command: Parameters< EditorHandle[ 'runSearchCommand' ] >[ 0 ],
+			disabled = false
 		) => (
 			<IconButton
 				label={ label }
@@ -215,9 +216,14 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 				variant="minimal"
 				tone="neutral"
 				size="small"
+				disabled={ disabled }
 				onClick={ () => run( command ) }
 			/>
 		);
+
+		// Nothing to move to or replace without a search that finds something.
+		const hasMatches =
+			!! options.search && ! isInvalid && !! matchInfo?.total;
 
 		return (
 			<div
@@ -264,8 +270,18 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 							formatCapitalize
 						) }
 						{ toggle( 'regexp', 'Regex', regex ) }
-						{ action( 'Previous Match', arrowUp, 'findPrevious' ) }
-						{ action( 'Next Match', arrowDown, 'findNext' ) }
+						{ action(
+							'Previous Match',
+							arrowUp,
+							'findPrevious',
+							! hasMatches
+						) }
+						{ action(
+							'Next Match',
+							arrowDown,
+							'findNext',
+							! hasMatches
+						) }
 						<IconButton
 							label="Close"
 							icon={ closeSmall }
@@ -294,11 +310,17 @@ export const SearchBar = forwardRef< SearchBarHandle, Props >(
 							}
 						/>
 						<div className="minidit-search-bar__actions">
-							{ action( 'Replace', replace, 'replaceNext' ) }
+							{ action(
+								'Replace',
+								replace,
+								'replaceNext',
+								! hasMatches
+							) }
 							{ action(
 								'Replace All',
 								replaceAll,
-								'replaceAll'
+								'replaceAll',
+								! hasMatches
 							) }
 						</div>
 					</div>
