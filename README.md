@@ -1,3 +1,5 @@
+![Minidit](.github/assets/social-preview.png)
+
 # Minidit
 
 A lightweight, simple text editor for note-taking on Windows and macOS.
