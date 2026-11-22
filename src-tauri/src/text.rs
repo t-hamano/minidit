@@ -11,25 +11,49 @@ const UTF8_BOM: &[u8] = &[0xEF, 0xBB, 0xBF];
 const UTF16LE_BOM: &[u8] = &[0xFF, 0xFE];
 const UTF16BE_BOM: &[u8] = &[0xFE, 0xFF];
 
+/// The names are spelled out because the frontend sends and receives them
+/// as strings. They must match `ENCODINGS` in `src/files/text-format.ts`,
+/// which a test below checks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub enum Encoding {
+    #[serde(rename = "utf-8")]
     Utf8,
+    #[serde(rename = "utf-8-bom")]
     Utf8Bom,
+    #[serde(rename = "utf-16-le")]
     Utf16Le,
+    #[serde(rename = "utf-16-be")]
     Utf16Be,
     /// Windows-31J, which `encoding_rs` calls Shift_JIS.
+    #[serde(rename = "shift-jis")]
     ShiftJis,
 }
 
+impl Encoding {
+    #[cfg(test)]
+    pub const ALL: [Self; 5] = [
+        Self::Utf8,
+        Self::Utf8Bom,
+        Self::Utf16Le,
+        Self::Utf16Be,
+        Self::ShiftJis,
+    ];
+}
+
+/// The names must match `LINE_ENDINGS` in `src/files/text-format.ts`,
+/// which a test below checks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum LineEnding {
+    #[serde(rename = "crlf")]
     Crlf,
+    #[serde(rename = "lf")]
     Lf,
 }
 
 impl LineEnding {
+    #[cfg(test)]
+    pub const ALL: [Self; 2] = [Self::Crlf, Self::Lf];
+
     pub const fn os_default() -> Self {
         if cfg!(windows) {
             Self::Crlf
@@ -167,6 +191,49 @@ mod tests {
         SHIFT_JIS.encode(text).0.into_owned()
     }
 
+    /// The frontend's list of names, such as `ENCODINGS`.
+    fn frontend_names(list: &str) -> Vec<String> {
+        let source = include_str!("../../src/files/text-format.ts");
+        let start = source
+            .find(&format!("export const {list}"))
+            .unwrap_or_else(|| panic!("{list} is missing from text-format.ts"));
+        let rest = &source[start..];
+        let body = &rest[rest.find('[').unwrap()..rest.find("];").unwrap()];
+        body.split('\'')
+            .skip(1)
+            .step_by(2)
+            .map(String::from)
+            .collect()
+    }
+
+    fn names<T: Serialize>(values: &[T]) -> Vec<String> {
+        values
+            .iter()
+            .map(|value| {
+                serde_json::to_value(value)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn matches_the_frontend_names() {
+        assert_eq!(names(&Encoding::ALL), frontend_names("ENCODINGS"));
+        assert_eq!(names(&LineEnding::ALL), frontend_names("LINE_ENDINGS"));
+    }
+
+    #[test]
+    fn accepts_the_new_file_format() {
+        // A new tab is saved as UTF-8 with the OS's line ending.
+        let encoding: Encoding = serde_json::from_str("\"utf-8\"").unwrap();
+        assert_eq!(encoding, Encoding::Utf8);
+        let line_ending: LineEnding = serde_json::from_str("\"crlf\"").unwrap();
+        assert_eq!(line_ending, LineEnding::Crlf);
+    }
+
     #[test]
     fn detects_encodings() {
         assert_eq!(detect_encoding(b"\xEF\xBB\xBFabc"), Encoding::Utf8Bom);
@@ -219,14 +286,8 @@ mod tests {
     #[test]
     fn round_trips_every_encoding() {
         let text = "日本語\nline 2\n";
-        for encoding in [
-            Encoding::Utf8,
-            Encoding::Utf8Bom,
-            Encoding::Utf16Le,
-            Encoding::Utf16Be,
-            Encoding::ShiftJis,
-        ] {
-            for line_ending in [LineEnding::Crlf, LineEnding::Lf] {
+        for encoding in Encoding::ALL {
+            for line_ending in LineEnding::ALL {
                 let bytes = encode(text, encoding, line_ending).unwrap();
                 let decoded = decode(&bytes, None);
                 assert_eq!(decoded.text, text, "{encoding:?} {line_ending:?}");
