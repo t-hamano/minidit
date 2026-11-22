@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * WordPress dependencies
@@ -13,7 +13,7 @@ import {
 	SelectControl,
 	Stack,
 	SwitchControl,
-	Text,
+	Tabs,
 } from '@wordpress/ui';
 
 /**
@@ -53,6 +53,7 @@ const THEME_OPTIONS: Option< Settings[ 'theme' ] >[] = [
 
 type ChoiceProps< T > = {
 	label: string;
+	description?: string;
 	options: Option< T >[];
 	value: T;
 	onChange: ( value: T ) => void;
@@ -61,13 +62,20 @@ type ChoiceProps< T > = {
 /**
  * A select field for one of a few fixed values.
  *
- * @param props          Field properties.
- * @param props.label    The field label.
- * @param props.options  The choices.
- * @param props.value    The chosen value.
- * @param props.onChange Called with the newly chosen value.
+ * @param props             Field properties.
+ * @param props.label       The field label.
+ * @param props.description Optional text shown under the field.
+ * @param props.options     The choices.
+ * @param props.value       The chosen value.
+ * @param props.onChange    Called with the newly chosen value.
  */
-function Choice< T >( { label, options, value, onChange }: ChoiceProps< T > ) {
+function Choice< T >( {
+	label,
+	description,
+	options,
+	value,
+	onChange,
+}: ChoiceProps< T > ) {
 	const items: SelectItem[] = options.map( ( option ) => ( {
 		value: String( option.value ),
 		label: option.label,
@@ -75,6 +83,7 @@ function Choice< T >( { label, options, value, onChange }: ChoiceProps< T > ) {
 	return (
 		<SelectControl
 			label={ label }
+			description={ description }
 			items={ items }
 			value={ items.find( ( item ) => item.value === String( value ) ) }
 			isItemEqualToValue={ ( item, selected ) =>
@@ -90,32 +99,6 @@ function Choice< T >( { label, options, value, onChange }: ChoiceProps< T > ) {
 				}
 			} }
 		/>
-	);
-}
-
-/**
- * A titled group of settings, one setting per row.
- *
- * @param props          Section properties.
- * @param props.title    The heading.
- * @param props.children The settings.
- */
-function Section( {
-	title,
-	children,
-}: {
-	title: string;
-	children: ReactNode;
-} ) {
-	return (
-		<section>
-			<Stack direction="column" gap="lg">
-				<Text variant="heading-md" render={ <h3 /> }>
-					{ title }
-				</Text>
-				{ children }
-			</Stack>
-		</section>
 	);
 }
 
@@ -165,102 +148,125 @@ export function SettingsDialog( { open, onClose }: Props ) {
 				}
 			} }
 		>
-			<Dialog.Popup size="small">
+			<Dialog.Popup size="medium">
 				<Dialog.Header>
 					<Dialog.Title>Settings</Dialog.Title>
 					<Dialog.CloseIconButton />
 				</Dialog.Header>
 				<Dialog.Content>
-					<Stack direction="column" gap="2xl">
-						<Section title="General">
-							<SwitchControl
-								label="Check for Updates at Startup"
-								checked={ settings.checkForUpdates }
-								onCheckedChange={ ( checkForUpdates ) =>
-									updateSettings( { checkForUpdates } )
-								}
-							/>
-						</Section>
-						<Section title="Appearance">
-							<SearchableSelectControl
-								label="Font"
-								items={ fontItems }
-								value={
-									fontItems.find(
-										( item ) =>
-											item.value === settings.fontFamily
-									) ?? fontItems[ 0 ]
-								}
-								isItemEqualToValue={ ( item, selected ) =>
-									item.value === selected.value
-								}
-								onValueChange={ ( item ) =>
-									updateSettings( {
-										fontFamily: item?.value ?? '',
-									} )
-								}
-							/>
-							<InputControl
-								label="Font Size"
-								type="number"
-								min={ MIN_FONT_SIZE }
-								max={ MAX_FONT_SIZE }
-								value={ fontSize }
-								onChange={ ( event ) => {
-									setFontSize( event.target.value );
-									const size = Number( event.target.value );
-									if (
-										Number.isInteger( size ) &&
-										size >= MIN_FONT_SIZE &&
-										size <= MAX_FONT_SIZE
-									) {
-										updateSettings( { fontSize: size } );
+					<Tabs.Root
+						className="minidit-settings"
+						orientation="vertical"
+						defaultValue="general"
+					>
+						<Tabs.List>
+							<Tabs.Tab value="general">General</Tabs.Tab>
+							<Tabs.Tab value="editor">Editor Settings</Tabs.Tab>
+						</Tabs.List>
+						<Tabs.Panel value="general">
+							<Stack direction="column" gap="lg">
+								<Choice
+									label="Theme"
+									options={ THEME_OPTIONS }
+									value={ settings.theme }
+									onChange={ ( theme ) =>
+										updateSettings( { theme } )
 									}
-								} }
-								onBlur={ () =>
-									setFontSize( String( settings.fontSize ) )
-								}
-							/>
-							<Choice
-								label="Tab Width"
-								options={ TAB_WIDTH_OPTIONS }
-								value={ settings.tabWidth }
-								onChange={ ( tabWidth ) =>
-									updateSettings( { tabWidth } )
-								}
-							/>
-							<Choice
-								label="Indentation"
-								options={ INDENT_OPTIONS }
-								value={ settings.indentType }
-								onChange={ ( indentType ) =>
-									updateSettings( { indentType } )
-								}
-							/>
-							<Choice
-								label="Theme"
-								options={ THEME_OPTIONS }
-								value={ settings.theme }
-								onChange={ ( theme ) =>
-									updateSettings( { theme } )
-								}
-							/>
-							<SwitchControl
-								label="Show Line Numbers"
-								checked={ settings.lineNumbers }
-								onCheckedChange={ ( lineNumbers ) =>
-									updateSettings( { lineNumbers } )
-								}
-							/>
-							<SwitchControl
-								label="Show Whitespace"
-								checked={ settings.showWhitespace }
-								onCheckedChange={ ( showWhitespace ) =>
-									updateSettings( { showWhitespace } )
-								}
-							/>
-						</Section>
-					</Stack>
+								/>
+								<SwitchControl
+									label="Check for Updates at Startup"
+									checked={ settings.checkForUpdates }
+									onCheckedChange={ ( checkForUpdates ) =>
+										updateSettings( { checkForUpdates } )
+									}
+								/>
+							</Stack>
+						</Tabs.Panel>
+						<Tabs.Panel value="editor">
+							<Stack direction="column" gap="lg">
+								<SearchableSelectControl
+									label="Font"
+									description="Lists the fonts installed on your computer."
+									items={ fontItems }
+									value={
+										fontItems.find(
+											( item ) =>
+												item.value ===
+												settings.fontFamily
+										) ?? fontItems[ 0 ]
+									}
+									isItemEqualToValue={ ( item, selected ) =>
+										item.value === selected.value
+									}
+									onValueChange={ ( item ) =>
+										updateSettings( {
+											fontFamily: item?.value ?? '',
+										} )
+									}
+								/>
+								<InputControl
+									label="Font Size"
+									description="Size in pixels."
+									type="number"
+									min={ MIN_FONT_SIZE }
+									max={ MAX_FONT_SIZE }
+									value={ fontSize }
+									onChange={ ( event ) => {
+										setFontSize( event.target.value );
+										const size = Number(
+											event.target.value
+										);
+										if (
+											Number.isInteger( size ) &&
+											size >= MIN_FONT_SIZE &&
+											size <= MAX_FONT_SIZE
+										) {
+											updateSettings( {
+												fontSize: size,
+											} );
+										}
+									} }
+									onBlur={ () =>
+										setFontSize(
+											String( settings.fontSize )
+										)
+									}
+								/>
+								<Choice
+									label="Tab Width"
+									description="Width of tab characters and of each indentation level. Opened files indented with spaces use their own width instead."
+									options={ TAB_WIDTH_OPTIONS }
+									value={ settings.tabWidth }
+									onChange={ ( tabWidth ) =>
+										updateSettings( { tabWidth } )
+									}
+								/>
+								<Choice
+									label="Indentation"
+									description="Used for new files. Opened files keep the indentation they already use."
+									options={ INDENT_OPTIONS }
+									value={ settings.indentType }
+									onChange={ ( indentType ) =>
+										updateSettings( { indentType } )
+									}
+								/>
+								<SwitchControl
+									label="Show Line Numbers"
+									checked={ settings.lineNumbers }
+									onCheckedChange={ ( lineNumbers ) =>
+										updateSettings( { lineNumbers } )
+									}
+								/>
+								<SwitchControl
+									label="Show Whitespace"
+									checked={ settings.showWhitespace }
+									onCheckedChange={ ( showWhitespace ) =>
+										updateSettings( { showWhitespace } )
+									}
+								/>
+							</Stack>
+						</Tabs.Panel>
+					</Tabs.Root>
 				</Dialog.Content>
 			</Dialog.Popup>
 		</Dialog.Root>
