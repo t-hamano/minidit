@@ -1,61 +1,26 @@
 /**
  * External dependencies
  */
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { tags as t } from '@lezer/highlight';
+import {
+	defaultHighlightStyle,
+	syntaxHighlighting,
+} from '@codemirror/language';
+import { oneDark } from '@codemirror/theme-one-dark';
 
 /**
- * Syntax colors from the design tokens, so they follow the light / dark
- * theme.
+ * Internal dependencies
  */
-export const syntaxColors = syntaxHighlighting(
-	HighlightStyle.define( [
-		{
-			tag: [ t.keyword, t.controlKeyword, t.operatorKeyword, t.modifier ],
-			color: 'var(--wpds-color-foreground-interactive-brand)',
-		},
-		{
-			tag: [ t.string, t.special( t.string ), t.regexp, t.character ],
-			color: 'var(--wpds-color-foreground-content-success)',
-		},
-		{
-			tag: [ t.number, t.bool, t.null, t.atom, t.unit ],
-			color: 'var(--wpds-color-foreground-content-caution)',
-		},
-		{
-			tag: [ t.comment, t.meta, t.processingInstruction ],
-			color: 'var(--wpds-color-foreground-content-neutral-weak)',
-			fontStyle: 'italic',
-		},
-		{
-			tag: [ t.typeName, t.className, t.namespace, t.labelName ],
-			color: 'var(--wpds-color-foreground-content-info)',
-		},
-		{
-			tag: [
-				t.function( t.variableName ),
-				t.function( t.propertyName ),
-				t.macroName,
-			],
-			color: 'var(--wpds-color-foreground-interactive-brand-strong)',
-		},
-		{
-			tag: [ t.tagName, t.heading, t.self ],
-			color: 'var(--wpds-color-foreground-content-error)',
-		},
-		{
-			tag: [ t.attributeName, t.propertyName, t.definition( t.name ) ],
-			color: 'var(--wpds-color-foreground-content-warning)',
-		},
-		{ tag: t.heading, fontWeight: 'bold' },
-		{ tag: t.strong, fontWeight: 'bold' },
-		{ tag: t.emphasis, fontStyle: 'italic' },
-		{ tag: t.strikethrough, textDecoration: 'line-through' },
-		{
-			tag: [ t.link, t.url ],
-			color: 'var(--wpds-color-foreground-content-info)',
-			textDecoration: 'underline',
-		},
-		{ tag: t.invalid, color: 'var(--wpds-color-foreground-content-error)' },
-	] )
-);
+import type { ColorScheme } from '../theme/use-color-scheme';
+
+/**
+ * The editor's colors, including syntax colors, come from CodeMirror's
+ * own themes: its default light style, and One Dark for the dark theme.
+ * The app's design tokens are only used outside the editor.
+ *
+ * @param scheme The color scheme to display.
+ */
+export function editorColors( scheme: ColorScheme ) {
+	return scheme === 'dark'
+		? oneDark
+		: syntaxHighlighting( defaultHighlightStyle );
+}

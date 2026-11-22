@@ -3,11 +3,11 @@
  */
 import {
 	Decoration,
+	EditorView,
 	highlightWhitespace,
 	MatchDecorator,
 	ViewPlugin,
 	type DecorationSet,
-	type EditorView,
 	type ViewUpdate,
 } from '@codemirror/view';
 
@@ -35,8 +35,23 @@ const highlightFullWidthSpace = ViewPlugin.fromClass(
 	{ decorations: ( plugin ) => plugin.decorations }
 );
 
+// Same colors as CodeMirror's own whitespace markers.
+const fullWidthSpaceTheme = EditorView.baseTheme( {
+	'.cm-fullWidthSpace': {
+		outline: '1px dashed',
+		outlineOffset: '-1px',
+	},
+	'&light .cm-fullWidthSpace': {
+		outlineColor: '#aaa',
+	},
+	'&dark .cm-fullWidthSpace': {
+		outlineColor: '#555',
+	},
+} );
+
 /** Shows half-width spaces, tabs, and full-width spaces. */
 export const showWhitespace = [
 	highlightWhitespace(),
 	highlightFullWidthSpace,
+	fullWidthSpaceTheme,
 ];
