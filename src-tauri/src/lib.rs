@@ -1,9 +1,12 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
+use tauri::Manager;
 use text::{Encoding, LineEnding};
 
 mod files;
+mod fonts;
+mod settings;
 mod text;
 
 #[derive(Serialize)]
@@ -79,11 +82,44 @@ async fn write_text_file(
     .await
 }
 
+/// Lists the installed font families, for the font setting.
+#[tauri::command]
+async fn list_fonts() -> Result<Vec<String>, String> {
+    run_blocking(|| Ok(fonts::installed_families()), |error| error).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![read_text_file, write_text_file])
+        .manage(settings::SettingsLock::default())
+        .manage(settings::NormalBounds::default())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) = event {
+                if let Some(webview_window) = window.app_handle().get_webview_window(window.label())
+                {
+                    settings::track_normal_bounds(
+                        &webview_window,
+                        &window.app_handle().state::<settings::NormalBounds>(),
+                    );
+                }
+            }
+        })
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                settings::restore_window_state(app.handle(), &window);
+                window.show()?;
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            read_text_file,
+            write_text_file,
+            list_fonts,
+            settings::read_settings,
+            settings::write_settings,
+            settings::save_window_state
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

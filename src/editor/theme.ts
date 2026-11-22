@@ -17,7 +17,7 @@ const DEFAULT_FONT_FAMILY = isMac
 export const editorTheme = EditorView.theme( {
 	'&': {
 		height: '100%',
-		fontSize: '14px',
+		fontSize: 'var(--minidit-font-size, 14px)',
 		color: 'var(--wpds-color-foreground-content-neutral)',
 		backgroundColor: 'var(--wpds-color-background-surface-neutral)',
 	},
@@ -25,12 +25,21 @@ export const editorTheme = EditorView.theme( {
 		outline: 'none',
 	},
 	'.cm-scroller': {
-		fontFamily: DEFAULT_FONT_FAMILY,
+		// The chosen font, with the default fonts as fallbacks.
+		fontFamily: `var(--minidit-font-family,) ${ DEFAULT_FONT_FAMILY }`,
 		lineHeight: '1.5',
 	},
 	'.cm-content': {
 		padding: 'var(--wpds-dimension-padding-sm) 0',
 		caretColor: 'var(--wpds-color-foreground-content-neutral)',
+	},
+	'.cm-gutters': {
+		color: 'var(--wpds-color-foreground-content-neutral-weak)',
+		backgroundColor: 'var(--wpds-color-background-surface-neutral)',
+		border: 'none',
+	},
+	'.cm-lineNumbers .cm-gutterElement': {
+		paddingInlineStart: 'var(--wpds-dimension-padding-md)',
 	},
 	'.cm-line': {
 		padding: '0 var(--wpds-dimension-padding-md)',

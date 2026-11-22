@@ -2,7 +2,6 @@
  * External dependencies
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 /**
  * Internal dependencies
@@ -12,13 +11,18 @@ import { Editor, type EditorHandle } from './editor/editor';
 import type { SearchOptions } from './editor/search';
 import { useAppMenu, type MenuHandlers } from './menu/app-menu';
 import { SearchBar, type SearchBarHandle } from './search/search-bar';
+import { SettingsDialog } from './settings/settings-dialog';
+import { SettingsProvider, useSettings } from './settings/settings-provider';
 import { StatusBar } from './status-bar';
 import { tabsStore, useTabs } from './tabs/store';
 import { TabBar } from './tabs/tab-bar';
 import { useTabCommands } from './tabs/use-tab-commands';
-import { useConfirmBeforeClose, useWindowTitle } from './tabs/use-window';
+import {
+	closeWindow,
+	useConfirmBeforeClose,
+	useWindowTitle,
+} from './tabs/use-window';
 import { AppThemeProvider } from './theme/app-theme-provider';
-import type { ThemePreference } from './theme/use-color-scheme';
 import { useTabSwitchShortcuts } from './use-shortcuts';
 
 const DEFAULT_SEARCH: SearchOptions = {
@@ -42,12 +46,9 @@ function isTextFieldFocused( ownerDocument: Document ) {
 	);
 }
 
-type WorkspaceProps = {
-	theme: ThemePreference;
-	setTheme: ( theme: ThemePreference ) => void;
-};
-
-function Workspace( { theme, setTheme }: WorkspaceProps ) {
+function Workspace() {
+	const { settings, updateSettings } = useSettings();
+	const [ settingsOpen, setSettingsOpen ] = useState( false );
 	const editorRef = useRef< EditorHandle >( null );
 	const focusEditor = useCallback( () => editorRef.current?.focus(), [] );
 	const commands = useTabCommands( focusEditor );
@@ -113,7 +114,7 @@ function Workspace( { theme, setTheme }: WorkspaceProps ) {
 			closeTab: () => commands.closeTab(),
 			quit: async () => {
 				if ( await commands.confirmQuit() ) {
-					await getCurrentWindow().destroy();
+					await closeWindow();
 				}
 			},
 			undo: () => undoOrRedo( 'undo' ),
@@ -122,12 +123,22 @@ function Workspace( { theme, setTheme }: WorkspaceProps ) {
 			replace: () => openSearch( 'replace' ),
 			findNext: () => findAgain( 'findNext' ),
 			findPrevious: () => findAgain( 'findPrevious' ),
-			setTheme,
+			openSettings: () => setSettingsOpen( true ),
+			setTheme: ( theme ) => updateSettings( { theme } ),
+			toggleLineNumbers: () =>
+				updateSettings( { lineNumbers: ! settings.lineNumbers } ),
 		} ),
-		[ commands, setTheme, openSearch, findAgain, undoOrRedo ]
+		[
+			commands,
+			openSearch,
+			findAgain,
+			undoOrRedo,
+			updateSettings,
+			settings.lineNumbers,
+		]
 	);
 
-	useAppMenu( menuHandlers, theme );
+	useAppMenu( menuHandlers, settings );
 	useTabSwitchShortcuts();
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
@@ -152,20 +163,32 @@ function Workspace( { theme, setTheme }: WorkspaceProps ) {
 				ref={ editorRef }
 				tab={ activeTab }
 				search={ searchOpen ? searchOptions : null }
+				settings={ settings }
 			/>
 			<StatusBar tab={ activeTab } commands={ commands } />
+			<SettingsDialog
+				open={ settingsOpen }
+				onClose={ () => setSettingsOpen( false ) }
+			/>
 		</main>
 	);
 }
 
-export function App() {
-	// Saved to the settings file once settings are added.
-	const [ theme, setTheme ] = useState< ThemePreference >( 'system' );
+function ThemedApp() {
+	const { settings } = useSettings();
 	return (
-		<AppThemeProvider theme={ theme }>
+		<AppThemeProvider theme={ settings.theme }>
 			<DialogProvider>
-				<Workspace theme={ theme } setTheme={ setTheme } />
+				<Workspace />
 			</DialogProvider>
 		</AppThemeProvider>
+	);
+}
+
+export function App() {
+	return (
+		<SettingsProvider>
+			<ThemedApp />
+		</SettingsProvider>
 	);
 }

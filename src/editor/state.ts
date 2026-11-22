@@ -15,6 +15,7 @@ import { EditorView, keymap } from '@codemirror/view';
  */
 import { searchExtension } from './search';
 import { editorTheme } from './theme';
+import { viewSettingsCompartment } from './view-settings';
 
 type UpdateListener = ( view: EditorView ) => void;
 
@@ -52,6 +53,8 @@ export function createEditorState(
 				autocapitalize: 'off',
 			} ),
 			searchExtension,
+			// Filled in when the state is shown.
+			viewSettingsCompartment.of( [] ),
 			EditorView.updateListener.of( ( update ) => {
 				onUpdate( update.state, update.docChanged );
 				editorUpdateListeners.forEach( ( listener ) =>
