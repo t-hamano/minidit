@@ -1,7 +1,7 @@
 //! Reading and writing text files.
 //!
 //! Only UTF-8 is supported at this stage. Encoding and line-ending handling
-//! (spec §5) arrive in a later phase.
+//! arrive in a later phase.
 
 use std::fs;
 use std::io::{ErrorKind, Write};

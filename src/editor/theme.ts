@@ -5,7 +5,7 @@ import { EditorView } from '@codemirror/view';
 
 const isMac = navigator.userAgent.includes( 'Mac' );
 
-// Spec §7: Latin font first, then a Japanese font as fallback.
+// Latin font first, then a Japanese font as fallback.
 const DEFAULT_FONT_FAMILY = isMac
 	? '"Menlo", "Hiragino Sans", monospace'
 	: '"Consolas", "MS Gothic", monospace';

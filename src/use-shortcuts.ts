@@ -13,7 +13,7 @@ type Shortcuts = {
 };
 
 /**
- * Keyboard shortcuts for file operations (spec §8.4).
+ * Keyboard shortcuts for file operations.
  *
  * These are temporary until the native menu bar, which will own the
  * accelerators, is added.

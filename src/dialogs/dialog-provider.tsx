@@ -14,56 +14,70 @@ import {
 /**
  * WordPress dependencies
  */
-import { Dialog } from '@wordpress/ui';
+import { AlertDialog, Dialog } from '@wordpress/ui';
 
-export type DialogButton< T > = {
-	label: string;
-	value: T;
-	/** The primary button is filled; others are outlined. */
-	primary?: boolean;
-};
-
-export type DialogOptions< T > = {
+export type MessageOptions = {
 	title: string;
 	message: string;
-	/** Buttons from left to right. */
-	buttons: DialogButton< T >[];
-	/** Returned when the dialog is dismissed with `Esc`. */
-	dismissValue: T;
 };
 
-type ShowDialog = < T >( options: DialogOptions< T > ) => Promise< T >;
-
-type Request = {
-	options: DialogOptions< unknown >;
-	resolve: ( value: unknown ) => void;
+export type ConfirmOptions = {
+	title: string;
+	message: string;
+	confirmLabel: string;
+	/** Colors the confirm button as destructive. */
+	irreversible?: boolean;
 };
 
-const DialogContext = createContext< ShowDialog | null >( null );
+type Request =
+	| { kind: 'message'; options: MessageOptions; resolve: () => void }
+	| {
+			kind: 'confirm';
+			options: ConfirmOptions;
+			resolve: ( confirmed: boolean ) => void;
+	  };
+
+type Dialogs = {
+	/** Shows a message with a single `OK` button. */
+	showMessage: ( options: MessageOptions ) => Promise< void >;
+	/**
+	 * Asks for confirmation with `Cancel` and a confirm button.
+	 * Resolves to whether the user confirmed.
+	 */
+	confirm: ( options: ConfirmOptions ) => Promise< boolean >;
+};
+
+const DialogContext = createContext< Dialogs | null >( null );
 
 /**
- * Hosts modal message dialogs and lets any component show one with
- * `useDialog()`. Requests made while a dialog is open are queued.
+ * Hosts modal dialogs and lets any component show one with `useDialogs()`.
+ * Requests made while a dialog is open are queued.
  *
  * @param props          Provider properties.
  * @param props.children The app.
  */
 export function DialogProvider( { children }: { children: ReactNode } ) {
 	const [ queue, setQueue ] = useState< Request[] >( [] );
-	const resultRef = useRef< { value: unknown } | null >( null );
+	const confirmedRef = useRef( false );
 	const current = queue[ 0 ];
 
-	const showDialog = useCallback< ShowDialog >(
-		( options ) =>
-			new Promise( ( resolve ) => {
-				setQueue( ( requests ) => [
-					...requests,
-					{
-						options: options as DialogOptions< unknown >,
-						resolve: resolve as ( value: unknown ) => void,
-					},
-				] );
-			} ),
+	const dialogs = useMemo< Dialogs >(
+		() => ( {
+			showMessage: ( options ) =>
+				new Promise( ( resolve ) =>
+					setQueue( ( requests ) => [
+						...requests,
+						{ kind: 'message', options, resolve },
+					] )
+				),
+			confirm: ( options ) =>
+				new Promise( ( resolve ) =>
+					setQueue( ( requests ) => [
+						...requests,
+						{ kind: 'confirm', options, resolve },
+					] )
+				),
+		} ),
 		[]
 	);
 
@@ -71,27 +85,28 @@ export function DialogProvider( { children }: { children: ReactNode } ) {
 		if ( ! current ) {
 			return;
 		}
-		const value = resultRef.current
-			? resultRef.current.value
-			: current.options.dismissValue;
-		resultRef.current = null;
-		current.resolve( value );
+		if ( current.kind === 'confirm' ) {
+			current.resolve( confirmedRef.current );
+		} else {
+			current.resolve();
+		}
+		confirmedRef.current = false;
 		setQueue( ( requests ) => requests.slice( 1 ) );
 	}, [ current ] );
 
-	const contextValue = useMemo( () => showDialog, [ showDialog ] );
+	const onOpenChange = ( open: boolean ) => {
+		if ( ! open ) {
+			close();
+		}
+	};
 
 	return (
-		<DialogContext.Provider value={ contextValue }>
+		<DialogContext.Provider value={ dialogs }>
 			{ children }
-			{ current && (
+			{ current?.kind === 'message' && (
 				<Dialog.Root
 					open
-					onOpenChange={ ( open ) => {
-						if ( ! open ) {
-							close();
-						}
-					} }
+					onOpenChange={ onOpenChange }
 					disablePointerDismissal
 				>
 					<Dialog.Popup size="small">
@@ -106,53 +121,58 @@ export function DialogProvider( { children }: { children: ReactNode } ) {
 							</Dialog.Description>
 						</Dialog.Content>
 						<Dialog.Footer>
-							{ current.options.buttons.map( ( button ) => (
-								<Dialog.Action
-									key={ button.label }
-									variant={
-										button.primary ? 'solid' : 'outline'
-									}
-									onClick={ () => {
-										resultRef.current = {
-											value: button.value,
-										};
-									} }
-								>
-									{ button.label }
-								</Dialog.Action>
-							) ) }
+							<Dialog.Action>OK</Dialog.Action>
 						</Dialog.Footer>
 					</Dialog.Popup>
 				</Dialog.Root>
+			) }
+			{ current?.kind === 'confirm' && (
+				<AlertDialog.Root
+					open
+					onOpenChange={ onOpenChange }
+					onConfirm={ () => {
+						confirmedRef.current = true;
+					} }
+				>
+					<AlertDialog.Popup
+						intent={
+							current.options.irreversible
+								? 'irreversible'
+								: 'default'
+						}
+						title={ current.options.title }
+						description={ current.options.message }
+						cancelButtonText="Cancel"
+						confirmButtonText={ current.options.confirmLabel }
+					/>
+				</AlertDialog.Root>
 			) }
 		</DialogContext.Provider>
 	);
 }
 
-export function useDialog(): ShowDialog {
-	const showDialog = useContext( DialogContext );
-	if ( ! showDialog ) {
-		throw new Error( 'useDialog must be used inside DialogProvider.' );
+export function useDialogs(): Dialogs {
+	const dialogs = useContext( DialogContext );
+	if ( ! dialogs ) {
+		throw new Error( 'useDialogs must be used inside DialogProvider.' );
 	}
-	return showDialog;
+	return dialogs;
 }
 
 /**
  * Shows an error message with a single `OK` button.
  *
- * @param showDialog The function from `useDialog()`.
- * @param title      Short summary of what failed.
- * @param error      The error; its message is shown.
+ * @param dialogs The value of `useDialogs()`.
+ * @param title   Short summary of what failed.
+ * @param error   The error; its message is shown.
  */
 export function showError(
-	showDialog: ShowDialog,
+	dialogs: Dialogs,
 	title: string,
 	error: unknown
 ): Promise< void > {
-	return showDialog( {
+	return dialogs.showMessage( {
 		title,
 		message: error instanceof Error ? error.message : String( error ),
-		buttons: [ { label: 'OK', value: undefined, primary: true } ],
-		dismissValue: undefined,
 	} );
 }

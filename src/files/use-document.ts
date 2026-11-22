@@ -6,7 +6,7 @@ import { useCallback, useRef, useState, type RefObject } from 'react';
 /**
  * Internal dependencies
  */
-import { showError, useDialog } from '../dialogs/dialog-provider';
+import { showError, useDialogs } from '../dialogs/dialog-provider';
 import type { EditorHandle } from '../editor/editor';
 import {
 	fileNameOf,
@@ -26,12 +26,12 @@ type LoadedDocument = {
 
 /**
  * File operations for the single open document: New, Open, Save, and
- * Save As (spec §4.1–4.3).
+ * Save As.
  *
  * @param editorRef The editor showing the document.
  */
 export function useDocument( editorRef: RefObject< EditorHandle | null > ) {
-	const showDialog = useDialog();
+	const dialogs = useDialogs();
 	const [ loaded, setLoaded ] = useState< LoadedDocument >( {
 		key: 0,
 		initialText: '',
@@ -55,14 +55,14 @@ export function useDocument( editorRef: RefObject< EditorHandle | null > ) {
 					editorRef.current?.getText() ?? ''
 				);
 			} catch ( error ) {
-				await showError( showDialog, "Couldn't save the file", error );
+				await showError( dialogs, "Couldn't save the file", error );
 				return false;
 			}
 			setPath( target );
 			setIsDirty( false );
 			return true;
 		},
-		[ editorRef, showDialog ]
+		[ editorRef, dialogs ]
 	);
 
 	const saveAs = useCallback( async () => {
@@ -77,32 +77,23 @@ export function useDocument( editorRef: RefObject< EditorHandle | null > ) {
 	}, [ saveAs, writeTo ] );
 
 	/**
-	 * Asks whether to save unsaved changes before they are replaced.
+	 * Asks whether to discard unsaved changes before they are replaced.
 	 *
 	 * @return Whether it is OK to continue.
 	 */
-	const confirmDiscard = useCallback( async () => {
+	const confirmDiscard = useCallback( () => {
 		if ( ! state.current.isDirty ) {
-			return true;
+			return Promise.resolve( true );
 		}
-		const name = state.current.path
-			? fileNameOf( state.current.path )
-			: UNTITLED;
-		const choice = await showDialog( {
-			title: `Do you want to save the changes to ${ name }?`,
-			message: "Your changes will be lost if you don't save them.",
-			buttons: [
-				{ label: 'Save', value: 'save', primary: true },
-				{ label: "Don't Save", value: 'discard' },
-				{ label: 'Cancel', value: 'cancel' },
-			],
-			dismissValue: 'cancel',
+		const { path: current } = state.current;
+		const name = current ? fileNameOf( current ) : UNTITLED;
+		return dialogs.confirm( {
+			title: 'Unsaved changes',
+			message: `"${ name }" has unsaved changes. Do you want to discard them?`,
+			confirmLabel: current ? 'Discard changes' : 'Discard',
+			irreversible: true,
 		} );
-		if ( choice === 'save' ) {
-			return save();
-		}
-		return choice === 'discard';
-	}, [ save, showDialog ] );
+	}, [ dialogs ] );
 
 	const load = useCallback( ( text: string, newPath: string | null ) => {
 		setLoaded( ( previous ) => ( {
@@ -130,9 +121,9 @@ export function useDocument( editorRef: RefObject< EditorHandle | null > ) {
 		try {
 			load( await readTextFile( target ), target );
 		} catch ( error ) {
-			await showError( showDialog, "Couldn't open the file", error );
+			await showError( dialogs, "Couldn't open the file", error );
 		}
-	}, [ confirmDiscard, load, showDialog ] );
+	}, [ confirmDiscard, load, dialogs ] );
 
 	/**
 	 * Wraps a command so it is ignored while another one is running.
