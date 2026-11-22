@@ -1,23 +1,43 @@
-//! Reading and writing text files.
-//!
-//! Only UTF-8 is supported at this stage. Encoding and line-ending handling
-//! arrive in a later phase.
+//! Reading and writing files.
 
 use std::fs;
-use std::io::{ErrorKind, Write};
+use std::io::{ErrorKind, Read, Write};
 use std::path::Path;
 
-/// Reads a UTF-8 text file.
-pub fn read_text(path: &Path) -> Result<String, String> {
-    let bytes = fs::read(path).map_err(|error| describe_io_error(path, &error))?;
-    String::from_utf8(bytes)
-        .map_err(|_| format!("\"{}\" is not a UTF-8 text file.", display_name(path)))
+/// Files larger than this are not opened.
+pub const MAX_FILE_SIZE: u64 = 50 * 1024 * 1024;
+
+/// Reads a file to open in the editor, refusing files over the size limit.
+pub fn read_bytes(path: &Path) -> Result<Vec<u8>, String> {
+    let describe = |error: std::io::Error| describe_io_error(path, &error);
+    let file = fs::File::open(path).map_err(describe)?;
+    let size = file.metadata().map_err(describe)?.len();
+    if size > MAX_FILE_SIZE {
+        return Err(too_large(path));
+    }
+    let mut bytes = Vec::with_capacity(size as usize);
+    // Guards against a file that grows while it is read.
+    file.take(MAX_FILE_SIZE + 1)
+        .read_to_end(&mut bytes)
+        .map_err(describe)?;
+    if bytes.len() as u64 > MAX_FILE_SIZE {
+        return Err(too_large(path));
+    }
+    Ok(bytes)
 }
 
-/// Writes a text file without corrupting the original if saving fails
+fn too_large(path: &Path) -> String {
+    format!(
+        "\"{}\" is larger than {} MB and can't be opened.",
+        display_name(path),
+        MAX_FILE_SIZE / 1024 / 1024
+    )
+}
+
+/// Writes a file without corrupting the original if saving fails
 /// partway through: the contents go to a temporary file in the same folder,
 /// which then replaces the original.
-pub fn write_text_atomic(path: &Path, contents: &str) -> Result<(), String> {
+pub fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
     let describe = |error: std::io::Error| describe_io_error(path, &error);
     let dir = match path.parent() {
         Some(dir) if !dir.as_os_str().is_empty() => dir,
@@ -40,7 +60,7 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<(), String> {
         .suffix(".tmp")
         .tempfile_in(dir)
         .map_err(describe)?;
-    temp.write_all(contents.as_bytes()).map_err(describe)?;
+    temp.write_all(contents).map_err(describe)?;
     temp.as_file().sync_all().map_err(describe)?;
     if let Some(permissions) = permissions {
         fs::set_permissions(temp.path(), permissions).map_err(describe)?;
@@ -49,7 +69,7 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn display_name(path: &Path) -> String {
+pub fn display_name(path: &Path) -> String {
     path.file_name()
         .unwrap_or(path.as_os_str())
         .to_string_lossy()
@@ -76,8 +96,8 @@ mod tests {
     fn writes_and_reads_back() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("memo.txt");
-        write_text_atomic(&path, "hello\nworld").unwrap();
-        assert_eq!(read_text(&path).unwrap(), "hello\nworld");
+        write_atomic(&path, b"hello\nworld").unwrap();
+        assert_eq!(read_bytes(&path).unwrap(), b"hello\nworld");
     }
 
     #[test]
@@ -85,7 +105,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("memo.txt");
         fs::write(&path, "old").unwrap();
-        write_text_atomic(&path, "new").unwrap();
+        write_atomic(&path, b"new").unwrap();
         assert_eq!(fs::read_to_string(&path).unwrap(), "new");
         assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
     }
@@ -99,7 +119,7 @@ mod tests {
         permissions.set_readonly(true);
         fs::set_permissions(&path, permissions).unwrap();
 
-        assert!(write_text_atomic(&path, "new").is_err());
+        assert!(write_atomic(&path, b"new").is_err());
         assert_eq!(fs::read_to_string(&path).unwrap(), "original");
         assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
     }
@@ -107,15 +127,21 @@ mod tests {
     #[test]
     fn reports_missing_file() {
         let dir = tempfile::tempdir().unwrap();
-        let error = read_text(&dir.path().join("missing.txt")).unwrap_err();
+        let error = read_bytes(&dir.path().join("missing.txt")).unwrap_err();
         assert_eq!(error, "\"missing.txt\" could not be found.");
     }
 
     #[test]
-    fn rejects_non_utf8() {
+    fn refuses_files_over_the_size_limit() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("sjis.txt");
-        fs::write(&path, [0x82, 0xa0]).unwrap();
-        assert!(read_text(&path).is_err());
+        let path = dir.path().join("big.txt");
+        fs::File::create(&path)
+            .unwrap()
+            .set_len(MAX_FILE_SIZE + 1)
+            .unwrap();
+        assert_eq!(
+            read_bytes(&path).unwrap_err(),
+            "\"big.txt\" is larger than 50 MB and can't be opened."
+        );
     }
 }

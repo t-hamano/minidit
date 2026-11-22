@@ -13,6 +13,7 @@ import { TabBar } from './tabs/tab-bar';
 import { useTabCommands } from './tabs/use-tab-commands';
 import { useConfirmBeforeClose, useWindowTitle } from './tabs/use-window';
 import { AppThemeProvider } from './theme/app-theme-provider';
+import { StatusBar } from './status-bar';
 import { useShortcuts } from './use-shortcuts';
 
 function Workspace() {
@@ -34,6 +35,7 @@ function Workspace() {
 				onFocusEditor={ focusEditor }
 			/>
 			<Editor ref={ editorRef } tab={ activeTab } />
+			<StatusBar tab={ activeTab } commands={ commands } />
 		</main>
 	);
 }
