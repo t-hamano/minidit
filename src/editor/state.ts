@@ -1,0 +1,51 @@
+/**
+ * External dependencies
+ */
+import {
+	defaultKeymap,
+	history,
+	historyKeymap,
+	insertTab,
+} from '@codemirror/commands';
+import { EditorState } from '@codemirror/state';
+import { EditorView, keymap } from '@codemirror/view';
+
+/**
+ * Internal dependencies
+ */
+import { editorTheme } from './theme';
+
+/**
+ * Creates the editor state for one tab. Each tab has its own state, so
+ * undo history is kept per tab.
+ *
+ * @param text     Initial contents.
+ * @param onUpdate Called with the new state after every update, and
+ *                 whether the text changed.
+ */
+export function createEditorState(
+	text: string,
+	onUpdate: ( state: EditorState, docChanged: boolean ) => void
+) {
+	return EditorState.create( {
+		doc: text,
+		extensions: [
+			history(),
+			keymap.of( [
+				{ key: 'Tab', run: insertTab },
+				...defaultKeymap,
+				...historyKeymap,
+			] ),
+			EditorView.lineWrapping,
+			EditorView.contentAttributes.of( {
+				spellcheck: 'false',
+				autocorrect: 'off',
+				autocapitalize: 'off',
+			} ),
+			EditorView.updateListener.of( ( update ) => {
+				onUpdate( update.state, update.docChanged );
+			} ),
+			editorTheme,
+		],
+	} );
+}

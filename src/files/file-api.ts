@@ -21,17 +21,17 @@ export function writeTextFile(
 }
 
 /**
- * Shows the OS open dialog.
+ * Shows the OS open dialog, which allows selecting several files.
  *
- * @return The chosen path, or `null` when canceled.
+ * @return The chosen paths; empty when canceled.
  */
-export async function pickFileToOpen(): Promise< string | null > {
-	const path = await open( {
-		multiple: false,
+export async function pickFilesToOpen(): Promise< string[] > {
+	const paths = await open( {
+		multiple: true,
 		directory: false,
 		filters: FILTERS,
 	} );
-	return typeof path === 'string' ? path : null;
+	return paths ?? [];
 }
 
 /**
@@ -44,8 +44,4 @@ export function pickFileToSave(
 	defaultPath?: string
 ): Promise< string | null > {
 	return save( { defaultPath, filters: FILTERS } );
-}
-
-export function fileNameOf( path: string ): string {
-	return path.split( /[\\/]/ ).pop() ?? path;
 }
