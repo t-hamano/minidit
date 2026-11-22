@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import clsx from 'clsx';
 
 /**
@@ -85,6 +85,34 @@ export function TabBar( { onNewTab, onCloseTab, onFocusEditor }: Props ) {
 		ownerDocument.addEventListener( 'pointercancel', onEnd );
 	};
 
+	// Follows the WAI-ARIA tabs pattern: the arrow keys, Home and End move
+	// focus between the tabs and activate the focused one.
+	const onTabKeyDown = ( event: KeyboardEvent ) => {
+		const index = tabs.findIndex( ( tab ) => tab.id === activeId );
+		let next: number;
+		switch ( event.key ) {
+			case 'ArrowLeft':
+				next = ( index - 1 + tabs.length ) % tabs.length;
+				break;
+			case 'ArrowRight':
+				next = ( index + 1 ) % tabs.length;
+				break;
+			case 'Home':
+				next = 0;
+				break;
+			case 'End':
+				next = tabs.length - 1;
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		tabsStore.activate( tabs[ next ].id );
+		listRef.current
+			?.querySelectorAll< HTMLElement >( '[role="tab"]' )
+			[ next ]?.focus();
+	};
+
 	return (
 		<div className="minidit-tab-bar">
 			<div className="minidit-tab-bar__tabs">
@@ -110,6 +138,7 @@ export function TabBar( { onNewTab, onCloseTab, onFocusEditor }: Props ) {
 										: undefined
 							}
 							onClose={ () => onCloseTab( tab.id ) }
+							onKeyDown={ onTabKeyDown }
 							onPointerDown={ ( event ) =>
 								startDrag( event, tab.id )
 							}
@@ -136,6 +165,7 @@ type TabItemProps = {
 	isActive: boolean;
 	dropSide?: 'before' | 'after';
 	onClose: () => void;
+	onKeyDown: ( event: KeyboardEvent ) => void;
 	onPointerDown: ( event: PointerEvent ) => void;
 };
 
@@ -145,6 +175,7 @@ function TabItem( {
 	isActive,
 	dropSide,
 	onClose,
+	onKeyDown,
 	onPointerDown,
 }: TabItemProps ) {
 	const title = tabTitle( tab );
@@ -182,6 +213,7 @@ function TabItem( {
 							role="tab"
 							aria-selected={ isActive }
 							tabIndex={ isActive ? 0 : -1 }
+							onKeyDown={ onKeyDown }
 							onClick={ ( event ) => {
 								tabsStore.activate( tab.id );
 								// Return focus to the editor after a mouse click,
