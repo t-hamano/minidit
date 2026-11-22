@@ -127,3 +127,32 @@ body {
 .minidit-status-bar__item {
 	padding: 0 var(--wpds-dimension-padding-sm);
 }
+
+.minidit-search-bar {
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	gap: var(--wpds-dimension-gap-xs);
+	padding: var(--wpds-dimension-padding-xs) var(--wpds-dimension-padding-sm);
+	background: var(--wpds-color-background-surface-neutral-weak);
+	border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
+}
+
+.minidit-search-bar__row {
+	display: flex;
+	align-items: center;
+	gap: var(--wpds-dimension-gap-xs);
+}
+
+.minidit-search-bar__input {
+	flex: 1;
+	min-width: 0;
+}
+
+.minidit-search-bar__count {
+	flex-shrink: 0;
+	min-width: 6em;
+	font-size: var(--wpds-typography-font-size-sm);
+	color: var(--wpds-color-foreground-content-neutral-weak);
+	text-align: end;
+}

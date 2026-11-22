@@ -35,6 +35,20 @@ export const editorTheme = EditorView.theme( {
 	'.cm-line': {
 		padding: '0 var(--wpds-dimension-padding-md)',
 	},
+	// Holds CodeMirror's hidden search panel; the app draws its own bar.
+	'.cm-panels-top': {
+		border: 'none',
+	},
+	'.cm-searchMatch': {
+		backgroundColor: 'var(--wpds-color-background-surface-warning)',
+		outline:
+			'var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-warning)',
+	},
+	'.cm-searchMatch-selected': {
+		backgroundColor: 'var(--wpds-color-background-surface-brand)',
+		outline:
+			'var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-brand-strong)',
+	},
 	'.cm-content ::selection, &.cm-focused .cm-content ::selection': {
 		backgroundColor:
 			'var(--wpds-color-background-interactive-brand-weak-active)',

@@ -26,6 +26,10 @@ export type MenuHandlers = {
 	quit: () => void;
 	undo: () => void;
 	redo: () => void;
+	find: () => void;
+	replace: () => void;
+	findNext: () => void;
+	findPrevious: () => void;
 	setTheme: ( theme: ThemePreference ) => void;
 };
 
@@ -132,10 +136,18 @@ async function createAppMenu(
 					{ item: 'Paste' },
 					{ item: 'SelectAll' },
 					separator,
-					item( 'Find', 'CmdOrCtrl+F' ),
-					item( 'Replace', isMac ? 'Cmd+Alt+F' : 'Ctrl+H' ),
-					item( 'Find Next', isMac ? 'Cmd+G' : 'F3' ),
-					item( 'Find Previous', isMac ? 'Cmd+Shift+G' : 'Shift+F3' ),
+					item( 'Find', 'CmdOrCtrl+F', () => run( 'find' ) ),
+					item( 'Replace', isMac ? 'Cmd+Alt+F' : 'Ctrl+H', () =>
+						run( 'replace' )
+					),
+					item( 'Find Next', isMac ? 'Cmd+G' : 'F3', () =>
+						run( 'findNext' )
+					),
+					item(
+						'Find Previous',
+						isMac ? 'Cmd+Shift+G' : 'Shift+F3',
+						() => run( 'findPrevious' )
+					),
 				],
 			} ),
 			await Submenu.new( {
