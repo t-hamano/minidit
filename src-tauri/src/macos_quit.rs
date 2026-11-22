@@ -2,9 +2,11 @@
 //! menu, such as from the Dock, or when the user logs out or shuts down.
 //!
 //! The window's event loop doesn't let the app stop macOS from quitting,
-//! so the app delegate gets an `applicationShouldTerminate:` method that
-//! cancels the quit and asks the window to quit instead, the same way as
-//! Quit Minidit in the menu.
+//! so the app delegate gets an `applicationShouldTerminate:` method. With
+//! no unsaved changes, it saves the window state and lets macOS quit, so
+//! logging out isn't interrupted. Otherwise it cancels the quit, brings the
+//! window to the front, and asks the window to quit the same way as Quit
+//! Minidit in the menu.
 
 use std::sync::OnceLock;
 
@@ -12,19 +14,32 @@ use objc2::ffi::class_addMethod;
 use objc2::runtime::{AnyClass, AnyObject, Imp, Sel};
 use objc2::{sel, MainThreadMarker};
 use objc2_app_kit::NSApplication;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
+
+use crate::{open_files, settings, UnsavedChanges};
 
 pub const QUIT_REQUESTED_EVENT: &str = "quit-requested";
 
 /// `NSTerminateCancel`.
 const TERMINATE_CANCEL: usize = 0;
+/// `NSTerminateNow`.
+const TERMINATE_NOW: usize = 1;
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
 
 extern "C-unwind" fn should_terminate(_: &AnyObject, _: Sel, _: *mut AnyObject) -> usize {
-    if let Some(app) = APP.get() {
-        let _ = app.emit(QUIT_REQUESTED_EVENT, ());
+    let Some(app) = APP.get() else {
+        return TERMINATE_NOW;
+    };
+    if !app.state::<UnsavedChanges>().get() {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = settings::save_window_state_of(app, &window);
+        }
+        return TERMINATE_NOW;
     }
+    // The confirmation is shown in the window, which may be minimized.
+    open_files::focus_window(app);
+    let _ = app.emit(QUIT_REQUESTED_EVENT, ());
     TERMINATE_CANCEL
 }
 

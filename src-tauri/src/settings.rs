@@ -103,15 +103,17 @@ pub fn write_settings(
 
 /// Saves the window's position and size, to restore on the next launch.
 #[tauri::command]
-pub fn save_window_state(
-    app: AppHandle,
-    lock: tauri::State<SettingsLock>,
-    bounds: tauri::State<NormalBounds>,
-    window: WebviewWindow,
-) -> Result<(), String> {
+pub fn save_window_state(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
+    save_window_state_of(&app, &window)
+}
+
+/// Saves a window's position and size, to restore on the next launch.
+pub fn save_window_state_of(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {
+    let lock = app.state::<SettingsLock>();
+    let bounds = app.state::<NormalBounds>();
     let _guard = lock.0.lock().unwrap_or_else(|error| error.into_inner());
-    let mut settings = load(&app);
-    track_normal_bounds(&window, &bounds);
+    let mut settings = load(app);
+    track_normal_bounds(window, &bounds);
     let maximized = window.is_maximized().unwrap_or(false);
     // A maximized window's size is the screen's, so save the size to
     // return to when it is restored.
@@ -126,7 +128,7 @@ pub fn save_window_state(
         WINDOW_KEY.into(),
         serde_json::to_value(state).map_err(|error| error.to_string())?,
     );
-    save(&app, &settings)
+    save(app, &settings)
 }
 
 /// Records the window's position and size unless it is maximized or
