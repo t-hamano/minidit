@@ -1,3 +1,7 @@
+/*
+ * The names below must match the `Encoding` and `LineEnding` enums in
+ * `src-tauri/src/text.rs`, which a Rust test checks.
+ */
 export type Encoding =
 	'utf-8' | 'utf-8-bom' | 'utf-16-le' | 'utf-16-be' | 'shift-jis';
 export type LineEnding = 'crlf' | 'lf';

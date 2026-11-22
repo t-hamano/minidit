@@ -4,12 +4,16 @@ on:
     pull_request:
         paths:
             - 'src-tauri/**'
+            # A Rust test checks the encoding names in this file.
+            - 'src/files/text-format.ts'
             - '.github/workflows/rust.yml'
     push:
         branches:
             - main
         paths:
             - 'src-tauri/**'
+            # A Rust test checks the encoding names in this file.
+            - 'src/files/text-format.ts'
             - '.github/workflows/rust.yml'
     workflow_dispatch:
 
