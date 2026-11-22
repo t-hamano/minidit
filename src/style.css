@@ -86,6 +86,11 @@ body {
 	border-right-color: var(--wpds-color-stroke-surface-neutral-weak);
 }
 
+/* Draw the focus ring inside, so the scrolling tab list does not clip it. */
+.minidit-tab__button:focus {
+	outline-offset: calc(var(--wpds-border-width-focus) * -1);
+}
+
 .minidit-tab.is-active .minidit-tab__button {
 	background: var(--wpds-color-background-surface-neutral);
 	box-shadow: 0 var(--wpds-border-width-xs) 0 var(--wpds-color-background-surface-neutral);
