@@ -21,7 +21,14 @@ type Props = {
 	commands: TabCommands;
 };
 
-const triggerButton = <Button variant="minimal" tone="neutral" size="small" />;
+const triggerButton = (
+	<Button
+		className="minidit-status-bar__menu-trigger"
+		variant="minimal"
+		tone="neutral"
+		size="small"
+	/>
+);
 
 /**
  * Shows the zoom level, encoding, and line ending of the active tab.

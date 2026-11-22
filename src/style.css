@@ -128,6 +128,10 @@ body {
 	padding: 0 var(--wpds-dimension-padding-sm);
 }
 
+.minidit-status-bar__menu-trigger {
+	--wp-ui-button-font-weight: var(--wpds-typography-font-weight-default);
+}
+
 .minidit-search-bar {
 	display: grid;
 	flex-shrink: 0;
