@@ -1,7 +1,8 @@
 /**
  * External dependencies
  */
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 /**
  * WordPress dependencies
@@ -35,6 +36,15 @@ type Props = {
  */
 export function AppThemeProvider( { theme, children }: Props ) {
 	const scheme = useColorScheme( theme );
+
+	// Match the native title bar and menu bar to the theme. `null` lets
+	// them follow the OS.
+	useEffect( () => {
+		getCurrentWindow()
+			.setTheme( theme === 'system' ? null : theme )
+			.catch( () => {} );
+	}, [ theme ] );
+
 	return (
 		<ThemeProvider isRoot color={ { background: BACKGROUND[ scheme ] } }>
 			<style>{ `:root { color-scheme: ${ scheme }; }` }</style>
