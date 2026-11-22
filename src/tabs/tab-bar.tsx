@@ -178,7 +178,7 @@ function TabItem( {
 							className="minidit-tab__button"
 							variant="minimal"
 							tone="neutral"
-							size="small"
+							size="compact"
 							role="tab"
 							aria-selected={ isActive }
 							tabIndex={ isActive ? 0 : -1 }
