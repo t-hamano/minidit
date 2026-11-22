@@ -82,11 +82,7 @@ body {
 }
 
 .minidit-tab__button {
-	--wp-ui-button-font-weight: var(--wpds-typography-font-weight-default);
-
-	gap: var(--wpds-dimension-gap-xs);
 	padding-inline-end: calc(var(--wpds-dimension-size-sm) + var(--wpds-dimension-padding-xs));
-	border-radius: inherit;
 }
 
 /* Draw the focus ring inside, so the scrolling tab list does not clip it. */
