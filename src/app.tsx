@@ -13,6 +13,8 @@ import { useAppMenu, type MenuHandlers } from './menu/app-menu';
 import { SearchBar, type SearchBarHandle } from './search/search-bar';
 import { DEFAULT_SETTINGS, stepZoom } from './settings/settings';
 import { SettingsDialog } from './settings/settings-dialog';
+import { AboutDialog } from './about/about-dialog';
+import { useUpdater } from './updater/use-updater';
 import { SettingsProvider, useSettings } from './settings/settings-provider';
 import { StatusBar } from './status-bar';
 import { tabsStore, useTabs } from './tabs/store';
@@ -51,6 +53,7 @@ function isTextFieldFocused( ownerDocument: Document ) {
 function Workspace() {
 	const { settings, updateSettings } = useSettings();
 	const [ settingsOpen, setSettingsOpen ] = useState( false );
+	const [ aboutOpen, setAboutOpen ] = useState( false );
 	const editorRef = useRef< EditorHandle >( null );
 	const focusEditor = useCallback( () => editorRef.current?.focus(), [] );
 	const commands = useTabCommands( focusEditor );
@@ -126,6 +129,7 @@ function Workspace() {
 			findNext: () => findAgain( 'findNext' ),
 			findPrevious: () => findAgain( 'findPrevious' ),
 			openSettings: () => setSettingsOpen( true ),
+			openAbout: () => setAboutOpen( true ),
 			setTheme: ( theme ) => updateSettings( { theme } ),
 			toggleLineNumbers: () =>
 				updateSettings( { lineNumbers: ! settings.lineNumbers } ),
@@ -154,6 +158,10 @@ function Workspace() {
 	useWindowTitle( activeTab );
 	useConfirmBeforeClose( commands.confirmQuit );
 	useOsFiles( commands );
+	const offerUpdate = useUpdater(
+		settings.checkForUpdates,
+		commands.confirmQuit
+	);
 
 	return (
 		<main className="minidit-app" ref={ mainRef }>
@@ -185,6 +193,11 @@ function Workspace() {
 			<SettingsDialog
 				open={ settingsOpen }
 				onClose={ () => setSettingsOpen( false ) }
+			/>
+			<AboutDialog
+				open={ aboutOpen }
+				onClose={ () => setAboutOpen( false ) }
+				onUpdateFound={ offerUpdate }
 			/>
 		</main>
 	);

@@ -173,3 +173,7 @@ body {
 	color: var(--wpds-color-foreground-content-neutral-weak);
 	text-align: end;
 }
+
+.minidit-about__error {
+	overflow-wrap: anywhere;
+}

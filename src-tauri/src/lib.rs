@@ -123,6 +123,9 @@ pub fn run() {
             open_files::focus_window(app);
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(open_files::OpenQueue::default())
         .manage(watcher::FileWatcher::default())
         .manage(settings::SettingsLock::default())

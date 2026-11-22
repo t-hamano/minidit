@@ -37,6 +37,7 @@
 	},
 	"bundle": {
 		"active": true,
+		"createUpdaterArtifacts": true,
 		"targets": "all",
 		"icon": [
 			"icons/32x32.png",
@@ -65,6 +66,14 @@
 		],
 		"macOS": {
 			"minimumSystemVersion": "13.0"
+		}
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "REPLACE_WITH_UPDATER_PUBLIC_KEY",
+			"endpoints": [
+				"https://github.com/t-hamano/minidit/releases/latest/download/latest.json"
+			]
 		}
 	}
 }
