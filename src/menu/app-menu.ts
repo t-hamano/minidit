@@ -33,12 +33,17 @@ export type MenuHandlers = {
 	openSettings: () => void;
 	setTheme: ( theme: ThemePreference ) => void;
 	toggleLineNumbers: () => void;
+	toggleWhitespace: () => void;
+	zoomIn: () => void;
+	zoomOut: () => void;
+	resetZoom: () => void;
 };
 
 /** Settings shown as checked menu items. */
 export type MenuState = {
 	theme: ThemePreference;
 	lineNumbers: boolean;
+	showWhitespace: boolean;
 };
 
 const THEMES: { value: ThemePreference; label: string }[] = [
@@ -91,6 +96,13 @@ async function createAppMenu(
 		text: 'Line Numbers',
 		checked: state.lineNumbers,
 		action: () => run( 'toggleLineNumbers' ),
+	} );
+
+	const whitespaceItem = await CheckMenuItem.new( {
+		id: 'show-whitespace',
+		text: 'Show Whitespace',
+		checked: state.showWhitespace,
+		action: () => run( 'toggleWhitespace' ),
 	} );
 
 	const settings = item( 'Settings…', 'CmdOrCtrl+,', () =>
@@ -170,12 +182,14 @@ async function createAppMenu(
 			await Submenu.new( {
 				text: 'View',
 				items: [
-					item( 'Zoom In', 'CmdOrCtrl+=' ),
-					item( 'Zoom Out', 'CmdOrCtrl+-' ),
-					item( 'Reset Zoom', 'CmdOrCtrl+0' ),
+					item( 'Zoom In', 'CmdOrCtrl+=', () => run( 'zoomIn' ) ),
+					item( 'Zoom Out', 'CmdOrCtrl+-', () => run( 'zoomOut' ) ),
+					item( 'Reset Zoom', 'CmdOrCtrl+0', () =>
+						run( 'resetZoom' )
+					),
 					separator,
 					lineNumbersItem,
-					item( 'Show Whitespace', undefined ),
+					whitespaceItem,
 					separator,
 					await Submenu.new( { text: 'Theme', items: themeItems } ),
 				],
@@ -183,7 +197,7 @@ async function createAppMenu(
 		],
 	} );
 
-	return { menu, themeItems, lineNumbersItem };
+	return { menu, themeItems, lineNumbersItem, whitespaceItem };
 }
 
 /**
@@ -197,6 +211,7 @@ export function useAppMenu( handlers: MenuHandlers, state: MenuState ) {
 	handlersRef.current = handlers;
 	const themeItemsRef = useRef< CheckMenuItem[] >( [] );
 	const lineNumbersItemRef = useRef< CheckMenuItem | null >( null );
+	const whitespaceItemRef = useRef< CheckMenuItem | null >( null );
 	const initialState = useRef( state );
 
 	useEffect( () => {
@@ -207,21 +222,29 @@ export function useAppMenu( handlers: MenuHandlers, state: MenuState ) {
 				handlersRef.current[ name ]( ...args ),
 			initialState.current
 		)
-			.then( async ( { menu, themeItems, lineNumbersItem } ) => {
-				if ( canceled ) {
-					return;
+			.then(
+				async ( {
+					menu,
+					themeItems,
+					lineNumbersItem,
+					whitespaceItem,
+				} ) => {
+					if ( canceled ) {
+						return;
+					}
+					themeItemsRef.current = themeItems;
+					lineNumbersItemRef.current = lineNumbersItem;
+					whitespaceItemRef.current = whitespaceItem;
+					await menu.setAsAppMenu();
 				}
-				themeItemsRef.current = themeItems;
-				lineNumbersItemRef.current = lineNumbersItem;
-				await menu.setAsAppMenu();
-			} )
+			)
 			.catch( () => {} );
 		return () => {
 			canceled = true;
 		};
 	}, [] );
 
-	const { theme, lineNumbers } = state;
+	const { theme, lineNumbers, showWhitespace } = state;
 	useEffect( () => {
 		themeItemsRef.current.forEach( ( themeItem, index ) => {
 			themeItem
@@ -234,6 +257,12 @@ export function useAppMenu( handlers: MenuHandlers, state: MenuState ) {
 		// A check item toggles itself when clicked, so set it either way.
 		lineNumbersItemRef.current?.setChecked( lineNumbers ).catch( () => {} );
 	}, [ lineNumbers ] );
+
+	useEffect( () => {
+		whitespaceItemRef.current
+			?.setChecked( showWhitespace )
+			.catch( () => {} );
+	}, [ showWhitespace ] );
 }
 
 /**

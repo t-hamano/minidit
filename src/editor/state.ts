@@ -5,7 +5,7 @@ import {
 	defaultKeymap,
 	history,
 	historyKeymap,
-	insertTab,
+	insertNewlineKeepIndent,
 } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
@@ -42,7 +42,8 @@ export function createEditorState(
 		extensions: [
 			history(),
 			keymap.of( [
-				{ key: 'Tab', run: insertTab },
+				// Keeps the line's indentation, without language rules.
+				{ key: 'Enter', run: insertNewlineKeepIndent },
 				...defaultKeymap,
 				...historyKeymap,
 			] ),

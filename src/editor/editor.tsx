@@ -7,7 +7,7 @@ import {
 	useImperativeHandle,
 	useMemo,
 	useRef,
-	type CSSProperties,
+	useState,
 } from 'react';
 import { redo, undo } from '@codemirror/commands';
 import { EditorView } from '@codemirror/view';
@@ -24,27 +24,9 @@ import {
 	type MatchInfo,
 	type SearchOptions,
 } from './search';
+import { loadedLanguage, loadLanguage } from './languages';
 import { applyViewSettings, type ViewSettings } from './view-settings';
 import type { Settings } from '../settings/settings';
-
-/**
- * The editor font, as CSS custom properties read by the editor theme.
- *
- * @param settings            The settings.
- * @param settings.fontFamily Font name; empty for the default font.
- * @param settings.fontSize   Font size in pixels.
- */
-function fontStyle( {
-	fontFamily,
-	fontSize,
-}: Pick< Settings, 'fontFamily' | 'fontSize' > ) {
-	return {
-		'--minidit-font-family': fontFamily.trim()
-			? `${ JSON.stringify( fontFamily.trim() ) }, `
-			: '',
-		'--minidit-font-size': `${ fontSize }px`,
-	} as CSSProperties;
-}
 
 export type EditorHandle = {
 	focus: () => void;
@@ -65,7 +47,7 @@ type Props = {
 	tab: Tab;
 	/** The search bar's options while it is open, otherwise `null`. */
 	search: SearchOptions | null;
-	settings: ViewSettings & Pick< Settings, 'fontFamily' | 'fontSize' >;
+	settings: Settings;
 };
 
 /**
@@ -119,12 +101,44 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 	// swapped in when another tab becomes active.
 	const searchRef = useRef( search );
 	searchRef.current = search;
+
+	// Rerenders once the active tab's language has loaded.
+	const [ , setLanguagesLoaded ] = useState( 0 );
+	useEffect( () => {
+		if ( ! loadedLanguage( tab.path ) ) {
+			loadLanguage( tab.path ).then( ( language ) => {
+				if ( language ) {
+					setLanguagesLoaded( ( count ) => count + 1 );
+				}
+			} );
+		}
+	}, [ tab.path ] );
+	const language = loadedLanguage( tab.path );
+
 	const viewSettings = useMemo< ViewSettings >(
 		() => ( {
+			fontFamily: settings.fontFamily,
+			fontSize: ( settings.fontSize * settings.zoom ) / 100,
 			tabWidth: settings.tabWidth,
 			lineNumbers: settings.lineNumbers,
+			showWhitespace: settings.showWhitespace,
+			indentation: tab.indentation ?? {
+				type: settings.indentType,
+				width: settings.tabWidth,
+			},
+			language,
 		} ),
-		[ settings.tabWidth, settings.lineNumbers ]
+		[
+			settings.fontFamily,
+			settings.fontSize,
+			settings.zoom,
+			settings.tabWidth,
+			settings.lineNumbers,
+			settings.showWhitespace,
+			settings.indentType,
+			tab.indentation,
+			language,
+		]
 	);
 	const viewSettingsRef = useRef( viewSettings );
 	viewSettingsRef.current = viewSettings;
@@ -158,7 +172,6 @@ export const Editor = forwardRef< EditorHandle, Props >( function MiniditEditor(
 		<div
 			className="minidit-editor"
 			ref={ containerRef }
-			style={ fontStyle( settings ) }
 			onContextMenu={ ( event ) => {
 				event.preventDefault();
 				showEditorContextMenu( handle ).catch( () => {} );

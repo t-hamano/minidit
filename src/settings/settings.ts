@@ -27,6 +27,23 @@ export type Settings = {
 	zoom: number;
 };
 
+export const MIN_ZOOM = 50;
+export const MAX_ZOOM = 300;
+export const ZOOM_STEP = 10;
+
+/**
+ * Steps the zoom level, staying within its range.
+ *
+ * @param zoom      The current zoom level in percent.
+ * @param direction `1` to zoom in, `-1` to zoom out.
+ */
+export function stepZoom( zoom: number, direction: 1 | -1 ) {
+	return Math.min(
+		MAX_ZOOM,
+		Math.max( MIN_ZOOM, zoom + direction * ZOOM_STEP )
+	);
+}
+
 export const MIN_FONT_SIZE = 6;
 export const MAX_FONT_SIZE = 72;
 export const TAB_WIDTHS: readonly TabWidth[] = [ 2, 4, 8 ];
@@ -83,7 +100,8 @@ export function sanitizeSettings( raw: Record< string, unknown > ): Settings {
 		showWhitespace: bool( raw.showWhitespace, d.showWhitespace ),
 		checkForUpdates: bool( raw.checkForUpdates, d.checkForUpdates ),
 		zoom:
-			isNumberIn( raw.zoom, 50, 300 ) && ( raw.zoom as number ) % 10 === 0
+			isNumberIn( raw.zoom, MIN_ZOOM, MAX_ZOOM ) &&
+			( raw.zoom as number ) % ZOOM_STEP === 0
 				? ( raw.zoom as number )
 				: d.zoom,
 	};

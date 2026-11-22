@@ -11,6 +11,7 @@ import { Editor, type EditorHandle } from './editor/editor';
 import type { SearchOptions } from './editor/search';
 import { useAppMenu, type MenuHandlers } from './menu/app-menu';
 import { SearchBar, type SearchBarHandle } from './search/search-bar';
+import { DEFAULT_SETTINGS, stepZoom } from './settings/settings';
 import { SettingsDialog } from './settings/settings-dialog';
 import { SettingsProvider, useSettings } from './settings/settings-provider';
 import { StatusBar } from './status-bar';
@@ -127,6 +128,13 @@ function Workspace() {
 			setTheme: ( theme ) => updateSettings( { theme } ),
 			toggleLineNumbers: () =>
 				updateSettings( { lineNumbers: ! settings.lineNumbers } ),
+			toggleWhitespace: () =>
+				updateSettings( { showWhitespace: ! settings.showWhitespace } ),
+			zoomIn: () =>
+				updateSettings( { zoom: stepZoom( settings.zoom, 1 ) } ),
+			zoomOut: () =>
+				updateSettings( { zoom: stepZoom( settings.zoom, -1 ) } ),
+			resetZoom: () => updateSettings( { zoom: DEFAULT_SETTINGS.zoom } ),
 		} ),
 		[
 			commands,
@@ -135,6 +143,8 @@ function Workspace() {
 			undoOrRedo,
 			updateSettings,
 			settings.lineNumbers,
+			settings.showWhitespace,
+			settings.zoom,
 		]
 	);
 
@@ -165,7 +175,11 @@ function Workspace() {
 				search={ searchOpen ? searchOptions : null }
 				settings={ settings }
 			/>
-			<StatusBar tab={ activeTab } commands={ commands } />
+			<StatusBar
+				tab={ activeTab }
+				commands={ commands }
+				zoom={ settings.zoom }
+			/>
 			<SettingsDialog
 				open={ settingsOpen }
 				onClose={ () => setSettingsOpen( false ) }

@@ -19,6 +19,8 @@ import type { TabCommands } from './tabs/use-tab-commands';
 type Props = {
 	tab: Tab;
 	commands: TabCommands;
+	/** Zoom level in percent. */
+	zoom: number;
 };
 
 const triggerButton = (
@@ -36,11 +38,12 @@ const triggerButton = (
  * @param props          Component properties.
  * @param props.tab      The active tab.
  * @param props.commands File and tab operations.
+ * @param props.zoom     Zoom level in percent.
  */
-export function StatusBar( { tab, commands }: Props ) {
+export function StatusBar( { tab, commands, zoom }: Props ) {
 	return (
 		<footer className="minidit-status-bar">
-			<span className="minidit-status-bar__item">100%</span>
+			<span className="minidit-status-bar__item">{ zoom }%</span>
 			<Menu.Root>
 				<Menu.Trigger
 					render={ triggerButton }
