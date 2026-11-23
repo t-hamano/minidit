@@ -13,6 +13,12 @@ const isMac = navigator.userAgent.includes( 'Mac' );
 
 type BrowserKeyHandlers = Pick<
 	MenuHandlers,
+	| 'newTab'
+	| 'openFiles'
+	| 'save'
+	| 'saveAs'
+	| 'closeTab'
+	| 'openSettings'
 	| 'find'
 	| 'replace'
 	| 'findNext'
@@ -23,9 +29,9 @@ type BrowserKeyHandlers = Pick<
 >;
 
 /**
- * Finds the command for a key that WebView2 on Windows keeps to itself as a
- * browser shortcut. Such keys reach the page but never the menu bar, so
- * their menu shortcuts do nothing. Matching `event.key` rather than the
+ * Finds the menu command for a key on Windows. While the WebView has focus,
+ * its keys reach the page but never the menu bar, so the menu shortcuts do
+ * nothing unless the page runs them. Matching `event.key` rather than the
  * physical key also lets Ctrl+= work on keyboards where `=` needs Shift,
  * such as Japanese ones.
  *
@@ -47,6 +53,20 @@ function getBrowserKeyCommand(
 		return null;
 	}
 	switch ( event.key ) {
+		case 'n':
+		case 'N':
+			return event.shiftKey ? null : 'newTab';
+		case 'o':
+		case 'O':
+			return event.shiftKey ? null : 'openFiles';
+		case 's':
+		case 'S':
+			return event.shiftKey ? 'saveAs' : 'save';
+		case 'w':
+		case 'W':
+			return event.shiftKey ? null : 'closeTab';
+		case ',':
+			return event.shiftKey ? null : 'openSettings';
 		case 'f':
 		case 'F':
 			return event.shiftKey ? null : 'find';
@@ -66,7 +86,8 @@ function getBrowserKeyCommand(
 }
 
 /**
- * Runs the menu commands for the search keys (Ctrl+F, Ctrl+H, F3 and
+ * Runs the menu commands for the File menu keys (Ctrl+N, Ctrl+O, Ctrl+S,
+ * Ctrl+Shift+S, Ctrl+W and Ctrl+,), the search keys (Ctrl+F, Ctrl+H, F3 and
  * Shift+F3) and the zoom keys on Windows, where WebView2 does not pass these
  * keys on to the menu bar.
  *
