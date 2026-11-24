@@ -25,6 +25,11 @@ updates:
           # Tauri crates are updated by the tauri multi-ecosystem group.
           - dependency-name: 'tauri'
           - dependency-name: 'tauri-*'
+          # These must use the same versions that Tauri's WebView uses
+          # internally, otherwise the Windows build fails. Update them
+          # manually together with Tauri.
+          - dependency-name: 'webview2-com'
+          - dependency-name: 'windows-core'
 
     - package-ecosystem: npm
       directory: /
