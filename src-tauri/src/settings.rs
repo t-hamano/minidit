@@ -6,7 +6,11 @@ use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri::window::Color;
+use tauri::{
+    AppHandle, Manager, Monitor, PhysicalPosition, PhysicalSize, Theme, WebviewWindow,
+    WebviewWindowBuilder,
+};
 
 use crate::files;
 
@@ -167,45 +171,162 @@ impl Rect {
     }
 }
 
-/// Whether enough of the window's top edge is on a screen to drag it, so a
-/// window saved on a disconnected screen isn't restored out of reach.
-fn is_reachable(state: &WindowState, screens: &[Rect]) -> bool {
-    let grab_x = state.x.saturating_add((state.width / 2).min(100) as i32);
-    let grab_y = state.y.saturating_add(10);
-    screens.iter().any(|screen| screen.contains(grab_x, grab_y))
-}
-
-/// Moves and resizes the window to where it was when the app last quit.
-pub fn restore_window_state(app: &AppHandle, window: &WebviewWindow) {
-    let Some(state) = load(app)
-        .get(WINDOW_KEY)
-        .and_then(|value| serde_json::from_value::<WindowState>(value.clone()).ok())
-    else {
-        return;
-    };
-    if state.width == 0 || state.height == 0 {
-        return;
-    }
-    let screens: Vec<Rect> = window
-        .available_monitors()
-        .unwrap_or_default()
-        .iter()
-        .map(|monitor| Rect {
+impl From<&Monitor> for Rect {
+    fn from(monitor: &Monitor) -> Self {
+        Rect {
             x: monitor.position().x,
             y: monitor.position().y,
             width: monitor.size().width,
             height: monitor.size().height,
-        })
-        .collect();
-    let _ = window.set_size(PhysicalSize::new(state.width, state.height));
-    if is_reachable(&state, &screens) {
-        let _ = window.set_position(PhysicalPosition::new(state.x, state.y));
+        }
     }
+}
+
+/// A point near the left of the window's top edge, where it can be dragged.
+fn grab_point(state: &WindowState) -> (i32, i32) {
+    (
+        state.x.saturating_add((state.width / 2).min(100) as i32),
+        state.y.saturating_add(10),
+    )
+}
+
+/// Whether enough of the window's top edge is on a screen to drag it, so a
+/// window saved on a disconnected screen isn't restored out of reach.
+fn is_reachable(state: &WindowState, screens: &[Rect]) -> bool {
+    let (x, y) = grab_point(state);
+    screens.iter().any(|screen| screen.contains(x, y))
+}
+
+/// The background colors of the page, from `app-theme-provider.tsx`.
+const LIGHT_BACKGROUND: Color = Color(0xfc, 0xfc, 0xfc, 0xff);
+const DARK_BACKGROUND: Color = Color(0x1e, 0x1e, 0x1e, 0xff);
+
+/// The theme setting, or `None` to follow the OS.
+fn theme_setting(settings: &Map<String, Value>) -> Option<Theme> {
+    match settings.get("theme").and_then(Value::as_str) {
+        Some("light") => Some(Theme::Light),
+        Some("dark") => Some(Theme::Dark),
+        _ => None,
+    }
+}
+
+/// Whether Windows is set to dark mode for apps, which the WebView follows.
+#[cfg(windows)]
+fn system_theme() -> Option<Theme> {
+    use windows::core::w;
+    use windows::Win32::System::Registry::{RegGetValueW, HKEY_CURRENT_USER, RRF_RT_REG_DWORD};
+
+    let mut value: u32 = 1;
+    let mut size = std::mem::size_of::<u32>() as u32;
+    let result = unsafe {
+        RegGetValueW(
+            HKEY_CURRENT_USER,
+            w!(r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"),
+            w!("AppsUseLightTheme"),
+            RRF_RT_REG_DWORD,
+            None,
+            Some(&mut value as *mut u32 as *mut _),
+            Some(&mut size),
+        )
+    };
+    result.is_ok().then_some(if value == 0 {
+        Theme::Dark
+    } else {
+        Theme::Light
+    })
+}
+
+/// macOS fills the window with its own color for the theme.
+#[cfg(not(windows))]
+fn system_theme() -> Option<Theme> {
+    None
+}
+
+/// Creates the main window where it was when the app last quit, and shows
+/// it right away.
+///
+/// The window shows before its WebView has started, which takes a few
+/// hundred milliseconds on Windows, so it is filled with the page's
+/// background color meanwhile. The page gets the settings with the window
+/// instead of asking for them, so that it can render as soon as it loads.
+pub fn create_main_window(app: &AppHandle) -> tauri::Result<WebviewWindow> {
+    let config = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|config| config.label == "main")
+        .expect("the main window is configured")
+        .clone();
+    let mut settings = load(app);
+    let state = settings
+        .remove(WINDOW_KEY)
+        .and_then(|value| serde_json::from_value::<WindowState>(value).ok())
+        .filter(|state| state.width > 0 && state.height > 0);
+    let theme = theme_setting(&settings);
+
+    let mut builder = WebviewWindowBuilder::from_config(app, &config)?
+        .initialization_script(format!(
+            "window.__MINIDIT_SETTINGS__ = {};",
+            Value::Object(settings)
+        ))
+        .theme(theme);
+    if let Some(theme) = theme.or_else(system_theme) {
+        builder = builder.background_color(match theme {
+            Theme::Dark => DARK_BACKGROUND,
+            _ => LIGHT_BACKGROUND,
+        });
+    }
+
+    let monitors = app.available_monitors().unwrap_or_default();
+    let screens: Vec<Rect> = monitors.iter().map(Rect::from).collect();
+    let reachable = state.filter(|state| is_reachable(state, &screens));
+    // The builder takes logical pixels, so they are converted with the
+    // scale factor of the screen the window opens on, and corrected below.
+    if let Some(state) = state {
+        let screen = reachable.and_then(|state| {
+            let (x, y) = grab_point(&state);
+            monitors
+                .iter()
+                .find(|monitor| Rect::from(*monitor).contains(x, y))
+                .cloned()
+        });
+        let scale = screen
+            .or_else(|| app.primary_monitor().ok().flatten())
+            .map_or(1.0, |monitor| monitor.scale_factor());
+        builder = builder
+            .inner_size(
+                f64::from(state.width) / scale,
+                f64::from(state.height) / scale,
+            )
+            .maximized(state.maximized);
+        if let Some(state) = reachable {
+            builder = builder.position(f64::from(state.x) / scale, f64::from(state.y) / scale);
+        }
+    }
+
+    let window = builder.build()?;
     let bounds = app.state::<NormalBounds>();
-    track_normal_bounds(window, &bounds);
-    if state.maximized {
-        let _ = window.maximize();
+    match state {
+        // Resizing a maximized window would restore it, so its restored
+        // size stays as created.
+        Some(state) if state.maximized => {
+            *bounds.0.lock().unwrap_or_else(|error| error.into_inner()) = Some(WindowState {
+                maximized: false,
+                ..state
+            });
+        }
+        _ => {
+            if let Some(state) = state {
+                let _ = window.set_size(PhysicalSize::new(state.width, state.height));
+            }
+            if let Some(state) = reachable {
+                let _ = window.set_position(PhysicalPosition::new(state.x, state.y));
+            }
+            track_normal_bounds(&window, &bounds);
+        }
     }
+    Ok(window)
 }
 
 #[cfg(test)]

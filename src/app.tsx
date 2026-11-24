@@ -1,7 +1,15 @@
 /**
  * External dependencies
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+	lazy,
+	Suspense,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 
 /**
  * Internal dependencies
@@ -12,8 +20,6 @@ import type { SearchOptions } from './editor/search';
 import { useAppMenu, type MenuHandlers } from './menu/app-menu';
 import { SearchBar, type SearchBarHandle } from './search/search-bar';
 import { DEFAULT_SETTINGS, stepZoom } from './settings/settings';
-import { SettingsDialog } from './settings/settings-dialog';
-import { AboutDialog } from './about/about-dialog';
 import { useUpdater } from './updater/use-updater';
 import { SettingsProvider, useSettings } from './settings/settings-provider';
 import { StatusBar } from './status-bar';
@@ -33,6 +39,33 @@ import {
 	useTabSwitchShortcuts,
 	useWheelZoom,
 } from './use-shortcuts';
+
+// The dialogs are loaded after the window first shows, since they hold
+// most of the UI components and the app starts without them.
+const loadSettingsDialog = () => import( './settings/settings-dialog' );
+const loadAboutDialog = () => import( './about/about-dialog' );
+const SettingsDialog = lazy( () =>
+	loadSettingsDialog().then( ( module ) => ( {
+		default: module.SettingsDialog,
+	} ) )
+);
+const AboutDialog = lazy( () =>
+	loadAboutDialog().then( ( module ) => ( { default: module.AboutDialog } ) )
+);
+
+/**
+ * Whether a dialog has been opened, so that it is mounted from then on and
+ * can animate closed.
+ *
+ * @param open Whether the dialog is open.
+ */
+function useHasOpened( open: boolean ) {
+	const [ hasOpened, setHasOpened ] = useState( open );
+	if ( open && ! hasOpened ) {
+		setHasOpened( true );
+	}
+	return hasOpened;
+}
 
 const DEFAULT_SEARCH: SearchOptions = {
 	search: '',
@@ -59,6 +92,16 @@ function Workspace() {
 	const { settings, updateSettings } = useSettings();
 	const [ settingsOpen, setSettingsOpen ] = useState( false );
 	const [ aboutOpen, setAboutOpen ] = useState( false );
+	const settingsMounted = useHasOpened( settingsOpen );
+	const aboutMounted = useHasOpened( aboutOpen );
+	// Loads the dialogs once the app has shown, so they open right away.
+	useEffect( () => {
+		const timeout = setTimeout( () => {
+			loadSettingsDialog().catch( () => {} );
+			loadAboutDialog().catch( () => {} );
+		}, 1000 );
+		return () => clearTimeout( timeout );
+	}, [] );
 	const editorRef = useRef< EditorHandle >( null );
 	const focusEditor = useCallback( () => editorRef.current?.focus(), [] );
 	const commands = useTabCommands( focusEditor );
@@ -211,15 +254,21 @@ function Workspace() {
 				onZoomOut={ menuHandlers.zoomOut }
 				onResetZoom={ menuHandlers.resetZoom }
 			/>
-			<SettingsDialog
-				open={ settingsOpen }
-				onClose={ () => setSettingsOpen( false ) }
-			/>
-			<AboutDialog
-				open={ aboutOpen }
-				onClose={ () => setAboutOpen( false ) }
-				onUpdateFound={ offerUpdate }
-			/>
+			<Suspense fallback={ null }>
+				{ settingsMounted && (
+					<SettingsDialog
+						open={ settingsOpen }
+						onClose={ () => setSettingsOpen( false ) }
+					/>
+				) }
+				{ aboutMounted && (
+					<AboutDialog
+						open={ aboutOpen }
+						onClose={ () => setAboutOpen( false ) }
+						onUpdateFound={ offerUpdate }
+					/>
+				) }
+			</Suspense>
 		</main>
 	);
 }

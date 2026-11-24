@@ -164,6 +164,8 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            let window = settings::create_main_window(app.handle())?;
+            browser_shortcuts::disable(&window);
             if let Ok(cwd) = std::env::current_dir() {
                 let paths = open_files::paths_from_args(std::env::args_os(), &cwd);
                 app.state::<open_files::OpenQueue>()
@@ -171,11 +173,6 @@ pub fn run() {
             }
             #[cfg(target_os = "macos")]
             macos_quit::install(app.handle());
-            if let Some(window) = app.get_webview_window("main") {
-                browser_shortcuts::disable(&window);
-                settings::restore_window_state(app.handle(), &window);
-                window.show()?;
-            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

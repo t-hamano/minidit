@@ -15,7 +15,12 @@ import {
 /**
  * Internal dependencies
  */
-import { readSettings, writeSettings, type Settings } from './settings';
+import {
+	initialSettings,
+	readSettings,
+	writeSettings,
+	type Settings,
+} from './settings';
 
 type SettingsContextValue = {
 	settings: Settings;
@@ -32,10 +37,15 @@ const SettingsContext = createContext< SettingsContextValue | null >( null );
  * @param props.children The app.
  */
 export function SettingsProvider( { children }: { children: ReactNode } ) {
-	const [ settings, setSettings ] = useState< Settings | null >( null );
-	const settingsRef = useRef< Settings | null >( null );
+	const [ settings, setSettings ] = useState< Settings | null >(
+		initialSettings
+	);
+	const settingsRef = useRef( settings );
 
 	useEffect( () => {
+		if ( settingsRef.current ) {
+			return;
+		}
 		readSettings().then( ( loaded ) => {
 			settingsRef.current = loaded;
 			setSettings( loaded );

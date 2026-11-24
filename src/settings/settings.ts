@@ -107,6 +107,30 @@ export function sanitizeSettings( raw: Record< string, unknown > ): Settings {
 	};
 }
 
+declare global {
+	interface Window {
+		/** The settings file's contents, given by the app with the window. */
+		__MINIDIT_SETTINGS__?: Record< string, unknown >;
+	}
+}
+
+/**
+ * The settings that the app gives with the window, so that the page can
+ * render without waiting to read them. `null` if the page should read
+ * them instead.
+ */
+export function initialSettings(): Settings | null {
+	const raw = window.__MINIDIT_SETTINGS__;
+	const navigation = performance.getEntriesByType( 'navigation' )[ 0 ] as
+		PerformanceNavigationTiming | undefined;
+	// They are from when the window opened, so a reload, such as by the
+	// development server, reads the current ones.
+	if ( ! raw || navigation?.type === 'reload' ) {
+		return null;
+	}
+	return sanitizeSettings( raw );
+}
+
 export async function readSettings(): Promise< Settings > {
 	try {
 		return sanitizeSettings(

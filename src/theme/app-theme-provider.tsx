@@ -3,6 +3,7 @@
  */
 import { useEffect, type ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 /**
  * WordPress dependencies
@@ -15,7 +16,8 @@ import { ThemeProvider } from '@wordpress/theme';
 import { useColorScheme, type ThemePreference } from './use-color-scheme';
 
 // Background seeds for the generated color ramps. Every other color,
-// including the editor's, derives from the resulting design tokens.
+// including the editor's, derives from the resulting design tokens. The
+// app opens the window in the same colors (see `settings.rs`).
 const BACKGROUND = {
 	light: '#fcfcfc',
 	dark: '#1e1e1e',
@@ -44,6 +46,14 @@ export function AppThemeProvider( { theme, children }: Props ) {
 			.setTheme( theme === 'system' ? null : theme )
 			.catch( () => {} );
 	}, [ theme ] );
+
+	// The window shows this color where the page hasn't drawn, such as while
+	// it resizes. It opens in the color of the theme at launch.
+	useEffect( () => {
+		getCurrentWebviewWindow()
+			.setBackgroundColor( BACKGROUND[ scheme ] )
+			.catch( () => {} );
+	}, [ scheme ] );
 
 	return (
 		<ThemeProvider isRoot color={ { background: BACKGROUND[ scheme ] } }>
