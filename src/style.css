@@ -7,14 +7,19 @@ body,
 
 body {
 	font-family: var(--wpds-typography-font-family-body);
-	background: var(--wpds-color-background-surface-neutral);
 	color: var(--wpds-color-foreground-content-neutral);
 }
 
+/*
+ * The page has no background until the app renders in its theme, so the
+ * WebView's background, which the app sets to the theme's color, shows
+ * instead of the light one of the default design tokens.
+ */
 .minidit-app {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
+	background: var(--wpds-color-background-surface-neutral);
 }
 
 .minidit-editor {
