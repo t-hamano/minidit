@@ -2300,7 +2300,7 @@ checksum = "d5848f5a9e8117cf94f2f90faac24a87ff81600ff8628c1e3deaab572e76bfa1"
 
 [[package]]
 name = "minidit"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "encoding_rs",
  "fontdb",
